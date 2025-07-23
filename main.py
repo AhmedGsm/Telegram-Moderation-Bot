@@ -4,6 +4,7 @@ import os
 
 from telethon import TelegramClient, events
 from telethon.tl.types import MessageMediaPhoto
+from constants import *
 
 
 class TelegramPostManager:
@@ -15,6 +16,8 @@ class TelegramPostManager:
         self.admin_id = admin_id
         self.pending_albums = {}  # Track album groupings
         self.user_id = -1000
+        self.full_post = False
+        self.notification_message = ""
 
     async def start(self):
         await self.client.start(bot_token=self.bot_token)
@@ -38,9 +41,11 @@ class TelegramPostManager:
             if not event.message.message and not event.message.media:
                 return
 
+
             # Handle media albums
             if self.user_id != self.admin_id:
                 if event.message.grouped_id:
+                    print("Processing album!!")
                     await self.process_album(event)
                 # Handle single messages
                 else:
@@ -49,22 +54,33 @@ class TelegramPostManager:
         except Exception as e:
             print(f"Error processing message: {e}")
 
+    async def check_if_full_post(self, event):
+        self.full_post = False
+        self.notification_message = NOTIFICATION_IMAGE_TEXT
+        if event.message.message and event.message.media:
+            self.notification_message = NOTIFICATION_HIDE_FOR_MODERATION
+            self.full_post = True
 
     async def process_single_message(self, event):
         """Process non-album messages"""
         # Copy to backup group
 
-        await self.client.forward_messages(
-            entity=self.backup_group,
-            messages=event.message.id,
-            from_peer=self.source_group
-        )
+        # If a user is posted image or album plus text enable posting,
+        # Else disable posting
+        await self.check_if_full_post(event)
+
+        if self.full_post:
+            await self.client.forward_messages(
+                entity=self.backup_group,
+                messages=event.message.id,
+                from_peer=self.source_group
+            )
 
         # Delete from source group
         await event.message.delete()
 
         # Send notification
-        await self.notify_user(event)
+        await self.notify_user(event, self.notification_message)
 
     async def process_album(self, event):
         """Handle media albums by grouping them"""
@@ -73,7 +89,7 @@ class TelegramPostManager:
         album_messages.append(event.message)
 
         # Wait 1 second to collect all album parts
-        await asyncio.sleep(2)
+        await asyncio.sleep(1)
         if album_id not in self.pending_albums:
             return
 
@@ -82,18 +98,23 @@ class TelegramPostManager:
         # Sort by ID to maintain original order
         messages.sort(key=lambda msg: msg.id)
 
+        # If a user is posted image or album plus text enable posting,
+        # Else disable posting
+        await self.check_if_full_post(event)
+
         # Forward album to backup
-        await self.client.forward_messages(
-            entity=self.backup_group,
-            messages=[msg.id for msg in messages],
-            from_peer=self.source_group
-        )
+        if self.full_post:
+            await self.client.forward_messages(
+                entity=self.backup_group,
+                messages=[msg.id for msg in messages],
+                from_peer=self.source_group
+            )
 
         # Delete all album parts
         await self.client.delete_messages(self.source_group, [msg.id for msg in messages])
 
         # Send notification
-        await self.notify_user(event)
+        await self.notify_user(event, self.notification_message)
 
     async def forward_album(self, messages):
         """Forward entire album preserving grouping"""
@@ -113,13 +134,13 @@ class TelegramPostManager:
             link_preview=False
         )
 
-    async def notify_user(self, event):
+    async def notify_user(self, event, message):
         """Notify user about hidden post"""
         sender = await event.get_sender()
         username = sender.username or sender.first_name
         await self.client.send_message(
             self.source_group,
-            f"@{username}, سيتم التحقق من المنشور يرجى الانتظار، شكرا",
+            f"@{username} {message}",
             reply_to=event.message.reply_to_msg_id
         )
 
