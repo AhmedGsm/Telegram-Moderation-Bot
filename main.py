@@ -138,11 +138,21 @@ class TelegramPostManager:
         """Notify user about hidden post"""
         sender = await event.get_sender()
         username = sender.username or sender.first_name
-        await self.client.send_message(
+        notification = await self.client.send_message(
             self.source_group,
             f"@{username} {message}",
             reply_to=event.message.reply_to_msg_id
         )
+        # Wait 5 seconds (or 10 if you prefer)
+        await asyncio.sleep(DELETE_NOTIFICATION_DELAY)
+
+        # Delete the notification message
+        try:
+            await self.client.delete_messages(self.source_group, [notification.id])
+            print("Message notification deleted!!")
+        except Exception as e:
+            print(f"Failed to delete notification: {e}")
+
 
 
 if __name__ == "__main__":

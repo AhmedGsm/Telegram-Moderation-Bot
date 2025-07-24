@@ -6,3 +6,4 @@ NOTIFICATION_IMAGE_TEXT = (
     "https://t.me/+B8OaGveY395hODQ0\n"
     "شكراً لتفهمكم."
 )
+DELETE_NOTIFICATION_DELAY = 10
