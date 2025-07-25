@@ -55,11 +55,16 @@ class TelegramPostManager:
             print(f"Error processing message: {e}")
 
     async def check_if_full_post(self, event):
-        self.full_post = False
-        self.notification_message = NOTIFICATION_IMAGE_TEXT
         if event.message.message and event.message.media:
             self.notification_message = NOTIFICATION_HIDE_FOR_MODERATION
             self.full_post = True
+        elif event.message.media:
+            self.full_post = False
+            self.notification_message = NOTIFICATION_INSERT_PRODUCT_DEF
+        elif event.message.message:
+            self.full_post = False
+            self.notification_message = NOTIFICATION_NO_QUESTIONS
+
 
     async def process_single_message(self, event):
         """Process non-album messages"""
