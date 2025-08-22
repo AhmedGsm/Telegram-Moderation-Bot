@@ -1,585 +1,115 @@
+<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Group Manager</title>
+    <title>Telegram Groups IDs Fetcher</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary: #0088cc;
-            --primary-dark: #006da3;
-            --secondary: #f5f5f5;
-            --text: #333;
-            --text-light: #777;
-            --success: #28a745;
-            --error: #dc3545;
-            --warning: #ffc107;
-            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            --transition: all 0.3s ease;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            color: var(--text);
-            line-height: 1.6;
-            min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            color: var(--primary);
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            color: var(--text-light);
-            font-size: 1.1rem;
-        }
-
-        .logo {
-            font-size: 3.5rem;
-            color: var(--primary);
-            margin-bottom: 15px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: var(--card-shadow);
-            padding: 30px;
-            margin-bottom: 30px;
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-            position: relative;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .form-group .input-icon {
-            position: absolute;
-            left: 15px;
-            top: 40px;
-            color: var(--primary);
-            font-size: 1.1rem;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 15px 15px 15px 45px;
-            border: 2px solid #e1e1e1;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: var(--transition);
-        }
-
-        .form-group input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.2);
-            outline: none;
-        }
-
-        .submit-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 15px 25px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: var(--transition);
-            display: block;
-            width: 100%;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .submit-btn:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 136, 204, 0.3);
-        }
-
-        .submit-btn:active {
-            transform: translateY(0);
-        }
-
-        .groups-list {
-            margin-top: 30px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .group-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            transition: var(--transition);
-        }
-
-        .group-item:hover {
-            background-color: #f9f9f9;
-        }
-
-        .group-name {
-            font-weight: 600;
-        }
-
-        .group-id {
-            color: var(--text-light);
-            font-size: 0.9rem;
-        }
-
-        .menu-container {
-            position: relative;
-            display: inline-block;
-        }
-
-        .menu-btn {
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-            color: var(--text-light);
-            padding: 5px 10px;
-            border-radius: 5px;
-            transition: var(--transition);
-        }
-
-        .menu-btn:hover {
-            background-color: #eee;
-            color: var(--text);
-        }
-
-        .dropdown-menu {
-            position: absolute;
-            right: 0;
-            top: 100%;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            width: 200px;
-            z-index: 100;
-            display: none;
-            overflow: hidden;
-        }
-
-        .dropdown-menu.show {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .menu-item {
-            padding: 12px 15px;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-        }
-
-        .menu-item i {
-            margin-right: 10px;
-            width: 20px;
-            text-align: center;
-        }
-
-        .menu-item:hover {
-            background-color: #f0f8ff;
-            color: var(--primary);
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-        }
-
-        .alert-error {
-            background-color: #ffebee;
-            color: var(--error);
-            border-left: 4px solid var(--error);
-        }
-
-        .alert-success {
-            background-color: #e8f5e9;
-            color: var(--success);
-            border-left: 4px solid var(--success);
-        }
-
-        .alert i {
-            margin-right: 10px;
-            font-size: 1.2rem;
-        }
-
-        .config-status {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f5f5f5;
-            border-radius: 8px;
-        }
-
-        .config-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .config-item:last-child {
-            margin-bottom: 0;
-            padding-bottom: 0;
-            border-bottom: none;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        .loading-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            .card {
-                padding: 20px;
-            }
-
-            .form-group input {
-                padding: 12px 12px 12px 40px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 15px;
-            }
-
-            .header h1 {
-                font-size: 1.8rem;
-            }
-
-            .header p {
-                font-size: 1rem;
-            }
-
-            .logo {
-                font-size: 2.8rem;
-            }
-
-            .card {
-                padding: 15px;
-            }
-
-            .submit-btn {
-                padding: 12px;
-            }
-
-            .dropdown-menu {
-                width: 180px;
-                right: -50px;
-            }
-        }
-    </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <div class="logo">
-                <i class="fab fa-telegram"></i>
+        <header>
+            <h1><i class="fab fa-telegram"></i> Telegram Groups IDs Fetcher</h1>
+            <p>Enter your Telegram credentials to fetch group IDs and save configuration</p>
+        </header>
+
+        <div class="form-container">
+            <form id="listIdsForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="user_id">Telegram User ID *</label>
+                        <input type="text" id="user_id" name="user_id" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="api_id">Telegram API ID *</label>
+                        <input type="text" id="api_id" name="api_id" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="api_hash">Telegram API Hash *</label>
+                        <input type="text" id="api_hash" name="api_hash" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bot_token">Telegram Bot Token *</label>
+                        <input type="text" id="bot_token" name="bot_token" required>
+                    </div>
+
+
+
+                    <div class="form-group">
+                        <label for="username">Telegram Username *</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phone">Telegram Phone Number *</label>
+                        <input type="tel" id="phone" name="phone" placeholder="+1234567890" required>
+                    </div>
+                </div>
+
+                <div class="form-buttons">
+                    <button type="button" disabled id="listGroupsBtn" title="Fill in all the fields above and click this button to list group IDs." class="btn btn-secondary">
+                        <i class="fas fa-list"></i> List Groups IDs
+                    </button>
+                </div>
+
+            </form>
+            
+            <div id="groupsContainer" class="groups-container" style="display: none;">
+                <h2><i class="fas fa-users"></i> Your Groups and Channels</h2>
+                <div class="groups-list" id="groupsList">
+                    <!-- Groups will be displayed here -->
+                </div>
             </div>
-            <h1>Telegram Group Manager</h1>
-            <p>Manage your Telegram groups and configure settings</p>
-        </div>
+            
+            <form id="registerForm" style="display: none;">
+                <div class="groups-div form-grid">
+                    <div class="form-group">
+                        <label for="source_group">Main Group ID *</label>
+                        <input type="text" id="source_group" name="source_group" required>
+                    </div>
 
-        <div class="card">
-            <h2><i class="fas fa-key"></i> Telegram API Credentials</h2>
-            <p>Enter your Telegram API credentials to fetch your groups</p>
-
-            <div id="alertBox"></div>
-
-            <form id="authForm">
-                <div class="form-group">
-                    <label for="api_id">API ID</label>
-                    <i class="input-icon fas fa-id-card"></i>
-                    <input type="text" id="api_id" name="api_id" required placeholder="Enter your API ID">
+                    <div class="form-group">
+                        <label for="backup_group">Moderation Group ID *</label>
+                        <input type="text" id="backup_group" name="backup_group" required>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="api_hash">API Hash</label>
-                    <i class="input-icon fas fa-hashtag"></i>
-                    <input type="text" id="api_hash" name="api_hash" required placeholder="Enter your API Hash">
+                <div class="form-buttons">
+                    <button type="button" id="registerBtn" disabled class="btn btn-primary" >
+                        <i class="fas fa-save"></i> Register
+                    </button>
                 </div>
-
-                <div class="form-group">
-                    <label for="username">Username (optional)</label>
-                    <i class="input-icon fas fa-user"></i>
-                    <input type="text" id="username" name="username" placeholder="Enter your Telegram username">
-                </div>
-
-                <div class="form-group">
-                    <label for="phone">Phone Number (optional)</label>
-                    <i class="input-icon fas fa-phone"></i>
-                    <input type="text" id="phone" name="phone" placeholder="Enter your phone number with country code">
-                </div>
-
-                <button type="submit" class="submit-btn">
-                    <i class="fas fa-sign-in-alt"></i> Connect to Telegram
-                </button>
             </form>
 
-            <div class="loading" id="loading">
-                <div class="loading-spinner"></div>
-                <p>Fetching your groups, please wait...</p>
+            <div id="codeVerification" class="verification-container" style="display: none;">
+                <h3>Verification Required</h3>
+                <p id="verificationMessage">Please enter the verification code sent to your Telegram account.</p>
+                <div class="verification-input">
+                    <input type="text" id="verificationCode" placeholder="Enter verification code">
+                    <button type="button" id="verifyCodeBtn" class="btn btn-primary">Verify Code</button>
+                </div>
             </div>
 
-            <div class="groups-list" id="groupsList" style="display: none;">
-                <h3>Your Groups</h3>
-                <div id="groupsContainer"></div>
+            <div id="passwordVerification" class="verification-container" style="display: none;">
+                <h3>Two-Factor Authentication</h3>
+                <p>Please enter your two-factor authentication password.</p>
+                <div class="verification-input">
+                    <input type="password" id="password" placeholder="Enter your password">
+                    <button type="button" id="verifyPasswordBtn" class="btn btn-primary">Verify Password</button>
+                </div>
             </div>
 
-            <div class="config-status" id="configStatus" style="display: none;">
-                <h3>Current Configuration</h3>
-                <div id="configItems"></div>
-            </div>
+            <div id="messageBox" class="message-box"></div>
         </div>
+
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const authForm = document.getElementById('authForm');
-            const loading = document.getElementById('loading');
-            const groupsList = document.getElementById('groupsList');
-            const groupsContainer = document.getElementById('groupsContainer');
-            const alertBox = document.getElementById('alertBox');
-            const configStatus = document.getElementById('configStatus');
-            const configItems = document.getElementById('configItems');
-
-            // Show alert function
-            function showAlert(message, type) {
-                alertBox.innerHTML = `
-                    <div class="alert alert-${type}">
-                        <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
-                        ${message}
-                    </div>
-                `;
-
-                // Auto hide after 5 seconds
-                setTimeout(() => {
-                    alertBox.innerHTML = '';
-                }, 5000);
-            }
-
-            // Update config status
-            function updateConfigStatus() {
-                fetch('/config')
-                    .then(response => response.json())
-                    .then(config => {
-                        if (Object.keys(config).length === 0) {
-                            configStatus.style.display = 'none';
-                            return;
-                        }
-
-                        let html = '';
-                        for (const [key, value] of Object.entries(config)) {
-                            html += `
-                                <div class="config-item">
-                                    <strong>${key}:</strong>
-                                    <span>${value}</span>
-                                </div>
-                            `;
-                        }
-
-                        configItems.innerHTML = html;
-                        configStatus.style.display = 'block';
-                    })
-                    .catch(error => {
-                        console.error('Error fetching config:', error);
-                    });
-            }
-
-            // Initial config status update
-            updateConfigStatus();
-
-            // Form submission
-            authForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                const formData = new FormData(authForm);
-
-                loading.style.display = 'block';
-                groupsList.style.display = 'none';
-
-                fetch('/get_groups', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    loading.style.display = 'none';
-
-                    if (data.error) {
-                        showAlert(data.error, 'error');
-                        return;
-                    }
-
-                    if (data.groups && data.groups.length > 0) {
-                        // Display groups
-                        let html = '';
-                        data.groups.forEach(group => {
-                            html += `
-                                <div class="group-item">
-                                    <div>
-                                        <div class="group-name">${group.name}</div>
-                                        <div class="group-id">ID: ${group.id}</div>
-                                    </div>
-                                    <div class="menu-container">
-                                        <button class="menu-btn" onclick="toggleMenu(this)">
-                                            <i class="fas fa-ellipsis-v"></i>
-                                        </button>
-                                        <div class="dropdown-menu">
-                                            <div class="menu-item" onclick="setConfig('ADMIN_SENDER_ID', ${group.id})">
-                                                <i class="fas fa-user-cog"></i> Set Admin User
-                                            </div>
-                                            <div class="menu-item" onclick="setConfig('SOURCE_GROUP', ${group.id})">
-                                                <i class="fas fa-users"></i> Set Main Group
-                                            </div>
-                                            <div class="menu-item" onclick="setConfig('MODERATION_GROUP', ${group.id})">
-                                                <i class="fas fa-shield-alt"></i> Set Moderation Group
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        });
-
-                        groupsContainer.innerHTML = html;
-                        groupsList.style.display = 'block';
-                    } else {
-                        showAlert('No groups found or you are not a member of any groups', 'error');
-                    }
-                })
-                .catch(error => {
-                    loading.style.display = 'none';
-                    showAlert('An error occurred: ' + error.message, 'error');
-                });
-            });
-
-            // Global functions for HTML onclick
-            window.toggleMenu = function(btn) {
-                const menu = btn.nextElementSibling;
-                const isShowing = menu.classList.contains('show');
-
-                // Close all open menus
-                document.querySelectorAll('.dropdown-menu.show').forEach(openMenu => {
-                    if (openMenu !== menu) {
-                        openMenu.classList.remove('show');
-                    }
-                });
-
-                // Toggle this menu
-                if (isShowing) {
-                    menu.classList.remove('show');
-                } else {
-                    menu.classList.add('show');
-                }
-            };
-
-            window.setConfig = function(key, value) {
-                const formData = new FormData();
-                formData.append('key', key);
-                formData.append('value', value);
-
-                fetch('/update_config', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        showAlert(data.error, 'error');
-                    } else {
-                        showAlert(`Successfully set ${key} to ${value}`, 'success');
-                        updateConfigStatus();
-                    }
-
-                    // Close all menus
-                    document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-                        menu.classList.remove('show');
-                    });
-                })
-                .catch(error => {
-                    showAlert('An error occurred: ' + error.message, 'error');
-                });
-            };
-
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!e.target.matches('.menu-btn') && !e.target.closest('.menu-btn')) {
-                    document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-                        menu.classList.remove('show');
-                    });
-                }
-            });
-        });
-    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
