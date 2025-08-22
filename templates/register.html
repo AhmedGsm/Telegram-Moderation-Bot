@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Bot Setup</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #0088cc;
+            --primary-dark: #006da3;
+            --secondary: #f5f5f5;
+            --text: #333;
+            --text-light: #777;
+            --success: #28a745;
+            --error: #dc3545;
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            animation: fadeIn 1s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            opacity: 0;
+            transform: translateY(-20px);
+            animation: slideDown 0.8s ease forwards 0.3s;
+        }
+
+        @keyframes slideDown {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        .logo {
+            font-size: 3.5rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+            padding: 30px;
+            margin-bottom: 30px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideUp 0.8s ease forwards 0.6s;
+        }
+
+        @keyframes slideUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text);
+            transition: var(--transition);
+        }
+
+        .form-group .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 40px;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            border: 2px solid #e1e1e1;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 136, 204, 0.2);
+            outline: none;
+        }
+
+        .form-group input:hover {
+            border-color: var(--primary);
+        }
+
+        .submit-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: block;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .submit-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 136, 204, 0.3);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .info-box {
+            background: rgba(0, 136, 204, 0.1);
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .info-box h3 {
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+
+        .footer {
+            text-align: center;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-top: 20px;
+            opacity: 0;
+            animation: fadeIn 1s ease forwards 1s;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .form-group input {
+                padding: 12px 12px 12px 40px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .header p {
+                font-size: 1rem;
+            }
+
+            .logo {
+                font-size: 2.8rem;
+            }
+
+            .card {
+                padding: 15px;
+            }
+
+            .submit-btn {
+                padding: 12px;
+            }
+        }
+
+        /* Lazy loading for background */
+        .lazy-bg {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .lazy-bg.loaded {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <i class="fab fa-telegram"></i>
+            </div>
+            <h1>Telegram Bot Setup</h1>
+            <p>Configure your bot credentials to get started</p>
+        </div>
+
+        <div class="card">
+            <form method="POST" id="configForm">
+                <div class="form-group">
+                    <label for="bot_token">Telegram Bot Token</label>
+                    <i class="input-icon fas fa-key"></i>
+                    <input type="text" name="bot_token" id="bot_token" value="{{ config.TELEGRAM_BOT_TOKEN }}" required placeholder="Enter your bot token">
+                </div>
+
+                <div class="form-group">
+                    <label for="source_group">Source Group ID</label>
+                    <i class="input-icon fas fa-users"></i>
+                    <input type="text" name="source_group" id="source_group" value="{{ config.SOURCE_GROUP }}" required placeholder="Enter source group ID">
+                </div>
+
+                <div class="form-group">
+                    <label for="backup_group">Backup Group ID</label>
+                    <i class="input-icon fas fa-database"></i>
+                    <input type="text" name="backup_group" id="backup_group" value="{{ config.BACKUP_GROUP }}" required placeholder="Enter backup group ID">
+                </div>
+
+                <div class="form-group">
+                    <label for="admin_sender_id">Admin Sender ID</label>
+                    <i class="input-icon fas fa-user-shield"></i>
+                    <input type="text" name="admin_sender_id" id="admin_sender_id" value="{{ config.ADMIN_SENDER_ID }}" required placeholder="Enter admin sender ID">
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-save"></i> Save Configuration
+                </button>
+            </form>
+
+            <div class="info-box">
+                <h3><i class="fas fa-info-circle"></i> Need Help?</h3>
+                <p>To get your bot token, talk to <a href="https://t.me/BotFather" target="_blank">@BotFather</a> on Telegram. Group IDs can be obtained by adding <a href="https://t.me/raw_data_bot" target="_blank">@raw_data_bot</a> to your group and checking the message data.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2023 Telegram Bot Setup | Designed with <i class="fas fa-heart" style="color: var(--primary);"></i></p>
+        </div>
+    </div>
+
+
+</body>
+</html>
