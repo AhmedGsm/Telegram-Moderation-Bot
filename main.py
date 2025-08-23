@@ -1,11 +1,9 @@
 
 import asyncio
-import os
-
+import json
 from telethon import TelegramClient, events
 from telethon.tl.types import MessageMediaPhoto
 from constants import *
-
 
 class TelegramPostManager:
     def __init__(self, api_id, api_hash, bot_token, source_group, backup_group, admin_id):
@@ -41,7 +39,6 @@ class TelegramPostManager:
             if not event.message.message and not event.message.media:
                 return
 
-
             # Handle media albums
             if self.user_id != self.admin_id:
                 if event.message.grouped_id:
@@ -64,7 +61,6 @@ class TelegramPostManager:
         elif event.message.message:
             self.full_post = False
             self.notification_message = NOTIFICATION_NO_QUESTIONS
-
 
     async def process_single_message(self, event):
         """Process non-album messages"""
@@ -158,19 +154,18 @@ class TelegramPostManager:
         except Exception as e:
             print(f"Failed to delete notification: {e}")
 
-
-
 if __name__ == "__main__":
     # Configuration (use environment variables in production)
-    from dotenv import load_dotenv
+    with open("config/config.json") as f:
+        config = json.load(f)
 
-    load_dotenv()
-    API_ID = int(os.getenv("TELEGRAM_API_ID"))
-    API_HASH = os.getenv("TELEGRAM_API_HASH")
-    BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-    SOURCE_GROUP_ID = int(os.getenv("SOURCE_GROUP"))
-    BACKUP_GROUP_ID = int(os.getenv("BACKUP_GROUP"))
-    ADMIN_SENDER_ID = int(os.getenv("ADMIN_SENDER_ID"))
+    # Extract values
+    API_ID = config["TELEGRAM_API_ID"]
+    API_HASH = config["TELEGRAM_API_HASH"]
+    BOT_TOKEN = config["TELEGRAM_BOT_TOKEN"]
+    SOURCE_GROUP_ID = config["SOURCE_GROUP"]
+    BACKUP_GROUP_ID = config["BACKUP_GROUP"]
+    ADMIN_SENDER_ID = config["ADMIN_SENDER_ID"]
 
     manager = TelegramPostManager(
         api_id=API_ID,
