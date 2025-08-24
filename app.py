@@ -5,9 +5,30 @@ import os
 from telethon.sync import TelegramClient
 from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError
 import asyncio
+import secrets
+
+
+def get_or_create_secret_key():
+    config_dir = 'config'
+    key_file = os.path.join(config_dir, 'secret.key')
+
+    # Create config directory if it doesn't exist
+    os.makedirs(config_dir, exist_ok=True)
+
+    # Generate new key if doesn't exist
+    if not os.path.exists(key_file):
+        secret_key = secrets.token_hex(32)
+        with open(key_file, 'w') as f:
+            f.write(secret_key)
+        return secret_key
+
+    # Read existing key
+    with open(key_file, 'r') as f:
+        return f.read().strip()
+
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-here'  # Change this in production
+app.secret_key = get_or_create_secret_key()
 
 # Ensure the config directory exists
 os.makedirs('config', exist_ok=True)
@@ -172,4 +193,6 @@ def verify_password():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    #app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=os.environ.get('DEBUG', False))
