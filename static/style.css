@@ -132,6 +132,16 @@ transform: none;
     box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
 }
 
+.btn-tertiary {
+    background: linear-gradient(90deg, #ca09e4 0%, #770586 100%);
+    color: white;
+}
+
+.btn-tertiary:hover {
+    background: linear-gradient(90deg, #dd9ae6 0%, #92519b 100%);
+    color: white;
+}
+
 .verification-container {
     background: #f8f9fa;
     border-radius: 10px;
@@ -259,6 +269,14 @@ transform: none;
 
 .copy-btn:hover {
     background: #5a6268;
+}
+
+#runBotBtnContainer {
+    margin: 20px 0;
+}
+
+#runBotBtn {
+    margin: 20px auto;
 }
 
 /* Responsive design */

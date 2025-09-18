@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const passwordVerification = document.getElementById('passwordVerification');
   const listForm = document.getElementById('listIdsForm');
   const registerForm = document.getElementById('registerForm');
-
+  const runBotButton = document.getElementById('runBotBtnContainer');
   // --- Helpers ---
 
   function showMessage(message, type = 'success') {
@@ -172,6 +172,8 @@ document.addEventListener('DOMContentLoaded', function() {
         showMessage(data.message, 'success');
         registerForm.style.display = 'none';
         groupsContainer.style.display = 'none';
+        // Show run bot button
+        runBotButton.style.display = "block";
       } else {
         showMessage(data.message || 'Failed to save configuration.', 'error');
       }
@@ -226,46 +228,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Verify code
-  verifyCodeBtn.addEventListener('click', async function () {
-    const code = document.getElementById('verificationCode').value.trim();
-    if (!code) return showMessage('Please enter the verification code', 'error');
-
-    verifyCodeBtn.disabled = true;
-    try {
-      const data = await safeFetch('/verify_code', { code });
-      if (data.status === 'success') {
-        displayGroups(data.groups || []);
-        showMessage('Verification successful!', 'success');
-      } else {
-        showMessage(data.message || 'Code verification failed.', 'error');
-      }
-    } catch (e) {
-      showMessage('An error occurred: ' + e.message, 'error');
-    } finally {
-      verifyCodeBtn.disabled = false;
-    }
-  });
-
-  // Verify password (2FA)
-  verifyPasswordBtn.addEventListener('click', async function () {
-    const password = document.getElementById('password').value;
-    if (!password) return showMessage('Please enter your password', 'error');
-
-    verifyPasswordBtn.disabled = true;
-    try {
-      const data = await safeFetch('/verify_password', { password });
-      if (data.status === 'success') {
-        passwordVerification.style.display = 'none';
-        displayGroups(data.groups || []);
-        showMessage('Verification successful!', 'success');
-      } else {
-        showMessage(data.message || 'Password verification failed.', 'error');
-      }
-    } catch (e) {
-      showMessage('An error occurred: ' + e.message, 'error');
-    } finally {
-      verifyPasswordBtn.disabled = false;
-    }
-  });
 });
