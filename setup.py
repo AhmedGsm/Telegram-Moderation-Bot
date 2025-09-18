@@ -6,7 +6,7 @@ from telethon.sync import TelegramClient
 from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError
 import asyncio
 import secrets
-
+import subprocess
 
 def get_or_create_secret_key():
     config_dir = 'config'
@@ -55,7 +55,7 @@ def save_config():
         with open('config/config.json', 'w') as f:
             json.dump(config, f, indent=4)
 
-        return jsonify({'status': 'success', 'message': 'Configuration saved successfully!'})
+        return jsonify({'status': 'success', 'message': 'Congratulations! Your bot was installed successfully. You can now run it by clicking the above button!'})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
@@ -192,7 +192,16 @@ def verify_password():
         return jsonify({'status': 'error', 'message': str(e)})
 
 
+@app.route('/run_bot', methods=['POST'])
+def run_bot():
+    try:
+        # Launch main.py as a subprocess
+        subprocess.Popen(["python", "main.py"])
+        return jsonify({'status': 'success', 'message': 'Bot is starting in the background...'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
+
 if __name__ == '__main__':
-    #app.run(debug=True)
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=os.environ.get('DEBUG', False))

@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const listForm = document.getElementById('listIdsForm');
   const registerForm = document.getElementById('registerForm');
   const runBotButton = document.getElementById('runBotBtnContainer');
+  const runBotBtn = document.getElementById('runBotBtn');
+
   // --- Helpers ---
 
   function showMessage(message, type = 'success') {
@@ -227,5 +229,18 @@ document.addEventListener('DOMContentLoaded', function() {
       setFormEnabled(listForm, true);
     }
   });
+
+  runBotBtn.addEventListener('click', async function () {
+  try {
+    const data = await safeFetch('/run_bot', {});
+    if (data.status === 'success') {
+      showMessage(data.message, 'success');
+    } else {
+      showMessage(data.message || 'Failed to start bot.', 'error');
+    }
+  } catch (e) {
+    showMessage('An error occurred: ' + e.message, 'error');
+  }
+});
 
 });
