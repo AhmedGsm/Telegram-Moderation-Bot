@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const verifyPasswordBtn = document.getElementById('verifyPasswordBtn');
   const messageBox = document.getElementById('messageBox');
   const groupsContainer = document.getElementById('groupsContainer');
-  const codeVerification = document.getElementById('codeVerification');
   const passwordVerification = document.getElementById('passwordVerification');
   const listForm = document.getElementById('listIdsForm');
   const registerForm = document.getElementById('registerForm');
@@ -212,13 +211,6 @@ document.addEventListener('DOMContentLoaded', function() {
       if (data.status === 'success') {
         displayGroups(data.groups || []);
         showMessage('Groups fetched successfully.', 'success');
-      } else if (data.status === 'code_required') {
-        codeVerification.style.display = 'block';
-        document.getElementById('verificationMessage').textContent = data.message || 'Verification required.';
-        showMessage(data.message || 'Verification code sent.', 'success');
-      } else if (data.status === 'password_required') {
-        passwordVerification.style.display = 'block';
-        showMessage(data.message || 'Two-factor password required.', 'success');
       } else {
         showMessage(data.message || 'Failed to fetch groups.', 'error');
         // let the user try again
@@ -243,13 +235,8 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       const data = await safeFetch('/verify_code', { code });
       if (data.status === 'success') {
-        codeVerification.style.display = 'none';
         displayGroups(data.groups || []);
         showMessage('Verification successful!', 'success');
-      } else if (data.status === 'password_required') {
-        // some flows might still need password here
-        passwordVerification.style.display = 'block';
-        showMessage(data.message || 'Two-factor password required.', 'success');
       } else {
         showMessage(data.message || 'Code verification failed.', 'error');
       }
