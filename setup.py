@@ -1,4 +1,4 @@
-# app.py
+# setup.py
 from flask import Flask, render_template, request, jsonify, session
 import json
 import os
@@ -36,7 +36,7 @@ os.makedirs('config', exist_ok=True)
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('setup.html')
 
 
 @app.route('/save_config', methods=['POST'])
