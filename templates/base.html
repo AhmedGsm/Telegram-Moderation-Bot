@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}This is a base template{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <main class="container">
+    <!-- Hero Section -->
+    <header class="hero">
+      <h1><i class="fas fa-robot"></i> Telegram Moderation Bot</h1>
+      <p class="tagline">Automate group moderation, backup messages, and keep your community safe.</p>
+      <div class="cta-buttons">
+        <a href="{{ url_for('setup') }}" class="btn btn-primary"><i class="fas fa-cogs"></i> Install Bot</a>
+        <a href="{{ url_for('bot_page') }}" class="btn btn-tertiary"><i class="fas fa-play"></i> Run Bot</a>
+      </div>
+    </header>
+
+    {% block content %}{% endblock %}
+
+    <!-- Footer -->
+    <footer>
+      <p>&copy; 2025 Telegram Moderation Bot | Designed for Envato Clients</p>
+    </footer>
+  </main>
+</body>
+</html>
