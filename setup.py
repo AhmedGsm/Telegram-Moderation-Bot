@@ -7,6 +7,7 @@ from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError
 import asyncio
 import secrets
 import subprocess
+from flask import redirect, url_for
 
 def get_or_create_secret_key():
     config_dir = 'config'
@@ -36,6 +37,10 @@ os.makedirs('config', exist_ok=True)
 
 @app.route('/')
 def index():
+    return render_template('index.html')
+
+@app.route('/setup')
+def setup():
     return render_template('setup.html')
 
 
@@ -201,6 +206,13 @@ def run_bot():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
+
+@app.route('/bot')
+def bot_page():
+    # If config.json doesn’t exist, redirect to setup page
+    if not os.path.exists("config/config.json"):
+        return render_template("no-setup.html")
+    return render_template('bot.html')
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))

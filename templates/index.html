@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telegram Moderation Bot</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Hero Section -->
+    <header class="hero">
+      <h1><i class="fas fa-robot"></i> Telegram Moderation Bot</h1>
+      <p class="tagline">Automate group moderation, backup messages, and keep your community safe.</p>
+      <div class="cta-buttons">
+        <a href="{{ url_for('setup') }}" class="btn btn-primary"><i class="fas fa-cogs"></i> Install Bot</a>
+        <a href="{{ url_for('bot_page') }}" class="btn btn-tertiary"><i class="fas fa-play"></i> Run Bot</a>
+      </div>
+    </header>
+
+    <!-- Features Section -->
+    <section class="features">
+      <h2><i class="fas fa-star"></i> Key Features</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <i class="fas fa-shield-alt fa-2x"></i>
+          <h3>Automatic Moderation</h3>
+          <p>Hide incomplete posts, prevent spam, and keep discussions clean without manual effort.</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-clone fa-2x"></i>
+          <h3>Backup Group</h3>
+          <p>Forward valid messages, albums, and media to a secure backup group automatically.</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-bolt fa-2x"></i>
+          <h3>Real-Time Notifications</h3>
+          <p>Send instant notifications to users explaining why their post was hidden or modified.</p>
+        </div>
+        <div class="feature-card">
+          <i class="fas fa-cogs fa-2x"></i>
+          <h3>Easy Configuration</h3>
+          <p>Setup your bot in minutes with a simple web form — no coding required.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p>&copy; 2025 Telegram Moderation Bot | Designed for Envato Clients</p>
+    </footer>
+  </div>
+</body>
+</html>

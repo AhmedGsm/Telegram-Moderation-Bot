@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Run Moderation Bot</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='bot.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1><i class="fas fa-robot"></i> Moderation Bot</h1>
+      <p>Start your Telegram Moderation Bot with one click</p>
+    </header>
+
+    <div class="form-container">
+      <div class="instructions">
+        <p>This page allows you to run your Telegram Moderation Bot.</p>
+        <p>Make sure you’ve completed the setup process and saved your configuration.</p>
+        <p>If no configuration is found, you’ll be redirected to the setup page.</p>
+      </div>
+
+      <form id="runBotForm">
+        <div class="form-buttons">
+          <button type="button" id="runBotBtn" class="btn btn-primary">
+            <i class="fas fa-play"></i> Run Bot
+          </button>
+        </div>
+      </form>
+
+      <div id="messageBox" class="message-box"></div>
+    </div>
+  </div>
+<script src="{{ url_for('static', filename='bot.js') }}"></script>
+</body>
+</html>
