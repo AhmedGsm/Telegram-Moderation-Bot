@@ -7,69 +7,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
 </head>
 <body>
-  <!-- Menu Toggle Button -->
-  <button class="menu-toggle" aria-label="Toggle menu">
-    <i class="fas fa-bars"></i>
-  </button>
-
-  <!-- Right Aside Menu -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <h3>🔧 Bot Controls</h3>
-      <button class="close-menu" aria-label="Close menu">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <nav class="sidebar-nav">
-      <ul>
-        <li>
-          <a href="{{ url_for('setup') }}">
-            <span class="menu-icon">⚙️</span>
-            <span class="menu-text">Install Bot</span>
-          </a>
-        </li>
-        <li>
-          <a href="{{ url_for('bot_page') }}">
-            <span class="menu-icon">🚀</span>
-            <span class="menu-text">Run Bot</span>
-          </a>
-        </li>
-        <li>
-          <a href="#">
-            <span class="menu-icon">📊</span>
-            <span class="menu-text">Dashboard</span>
-          </a>
-        </li>
-        <li>
-          <a href="#">
-            <span class="menu-icon">👥</span>
-            <span class="menu-text">Manage Groups</span>
-          </a>
-        </li>
-        <li>
-          <a href="#">
-            <span class="menu-icon">⚡</span>
-            <span class="menu-text">Settings</span>
-          </a>
-        </li>
-        <li>
-          <a href="#">
-            <span class="menu-icon">❓</span>
-            <span class="menu-text">Help & Support</span>
-          </a>
-        </li>
-      </ul>
-    </nav>
-    <div class="sidebar-footer">
-      <p>Telegram Moderation Bot v1.0</p>
-    </div>
-  </aside>
-
-  <!-- Overlay for closing menu when clicking outside -->
-  <div class="overlay"></div>
-
   <main class="container">
     <!-- Hero Section -->
     <header class="hero">
@@ -80,9 +20,56 @@
         <a href="{{ url_for('bot_page') }}" class="btn btn-tertiary"><i class="fas fa-play"></i> Run Bot</a>
       </div>
     </header>
+    <div class="middle-content">
+      <div class="menu">
+        
+      <!-- Menu Toggle Button 
+      <button class="menu-toggle" aria-label="Toggle menu">
+        <i class="fas fa-bars"></i>
+      </button>-->
 
-    {% block content %}{% endblock %}
+      <!-- Right Aside Menu -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h3>🔧 Bot Controls</h3>
+          <button class="close-menu" aria-label="Close menu">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <nav class="sidebar-nav">
+          <ul>
+            <li>
+              <a href="#">
+                <i class="fas fa-star"></i>
+                <span class="menu-text">Features</span>
+              </a>
+            </li>
+            <li>
+              <a href="{{ url_for('setup') }}">
+                <i class="fas fa-cogs"></i>
+                <span class="menu-text">Setup</span>
+              </a>
+            </li>
+            <li>
+              <a href="{{ url_for('bot_page') }}">
+                <i class="fas fa-play" ></i>
+                <span class="menu-text">Run</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <div class="sidebar-footer">
+          <p>Telegram Moderation Bot v1.0</p>
+        </div>
+      </aside>
 
+      <!-- Overlay for closing menu when clicking outside -->
+      <div class="overlay"></div>
+      </div>
+      <div class="main-content">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
     <!-- Footer -->
     <footer>
       <p>&copy; 2025 Telegram Moderation Bot | Designed for Envato Clients</p>
@@ -92,31 +79,8 @@
   <script>
     // JavaScript to handle menu toggle
     document.addEventListener('DOMContentLoaded', function() {
-      const menuToggle = document.querySelector('.menu-toggle');
-      const closeMenu = document.querySelector('.close-menu');
-      const sidebar = document.querySelector('.sidebar');
-      const overlay = document.querySelector('.overlay');
+
       
-      function openMenu() {
-        sidebar.classList.add('active');
-        overlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-      }
-      
-      function closeMenuFunc() {
-        sidebar.classList.remove('active');
-        overlay.classList.remove('active');
-        document.body.style.overflow = 'auto';
-      }
-      
-      menuToggle.addEventListener('click', openMenu);
-      closeMenu.addEventListener('click', closeMenuFunc);
-      overlay.addEventListener('click', closeMenuFunc);
-      
-      // Close menu when pressing Escape key
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeMenuFunc();
-      });
     });
   </script>
 </body>
