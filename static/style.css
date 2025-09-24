@@ -1,9 +1,9 @@
 /* static/style.css */
-* {
+/** {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-}
+}*/
 
 body {
     font-family: 'Poppins', sans-serif;
@@ -11,6 +11,7 @@ body {
     color: #333;
     min-height: 100vh;
     padding: 0;
+    margin: 0;
 }
 
 .middle-content {
@@ -27,7 +28,7 @@ body {
 }
 
 
-header {
+header, .small-header {
     background: linear-gradient(90deg, #0088cc 0%, #00a2ff 100%);
     color: white;
     padding: 25px;
@@ -53,6 +54,11 @@ header p {
     font-size: 1.2rem;
     width: 20px;
     text-align: center;
+}
+
+.main-content {
+  padding: 20px;
+  flex-grow: 1;
 }
 
 .groups-div {

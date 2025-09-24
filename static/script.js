@@ -1,31 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
 
-  const menuToggle = document.querySelector('.menu-toggle');
-  const closeMenu = document.querySelector('.close-menu');
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.querySelector('.overlay');
-  
-  function openMenu() {
-    sidebar.classList.add('active');
-    overlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }
-  
-  function closeMenuFunc() {
-    sidebar.classList.remove('active');
-    overlay.classList.remove('active');
-    document.body.style.overflow = 'auto';
-  }
-  
-  menuToggle.addEventListener('click', openMenu);
-  closeMenu.addEventListener('click', closeMenuFunc);
-  overlay.addEventListener('click', closeMenuFunc);
-  
-  // Close menu when pressing Escape key
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeMenuFunc();
-  });
-
 
   const registerBtn = document.getElementById('registerBtn');
   const listGroupsBtn = document.getElementById('listGroupsBtn');

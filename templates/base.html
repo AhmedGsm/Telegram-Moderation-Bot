@@ -22,11 +22,6 @@
     </header>
     <div class="middle-content">
       <div class="menu">
-        
-      <!-- Menu Toggle Button 
-      <button class="menu-toggle" aria-label="Toggle menu">
-        <i class="fas fa-bars"></i>
-      </button>-->
 
       <!-- Right Aside Menu -->
       <aside class="sidebar">
@@ -39,7 +34,7 @@
         <nav class="sidebar-nav">
           <ul>
             <li>
-              <a href="#">
+              <a href="{{ url_for('index') }}">
                 <i class="fas fa-star"></i>
                 <span class="menu-text">Features</span>
               </a>
@@ -66,9 +61,9 @@
       <!-- Overlay for closing menu when clicking outside -->
       <div class="overlay"></div>
       </div>
-      <div class="main-content">
+      <main class="main-content">
         {% block content %}{% endblock %}
-      </div>
+      </main>
     </div>
     <!-- Footer -->
     <footer>
@@ -76,12 +71,9 @@
     </footer>
   </main>
 
-  <script>
-    // JavaScript to handle menu toggle
-    document.addEventListener('DOMContentLoaded', function() {
+  {% block scripts %}
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+   {% endblock %}
 
-      
-    });
-  </script>
 </body>
 </html>

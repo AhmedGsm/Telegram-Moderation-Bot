@@ -1,32 +1,12 @@
-<!-- templates/setup.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Groups IDs Fetcher</title>
+{% extends 'base.html' %}
+{% block title %}Bot Setup{% endblock %}
 
-    <!-- Basic meta for marketplaces -->
-    <meta name="description" content="Securely fetch Telegram group and channel IDs, then save a bot configuration in one flow.">
-    <meta property="og:title" content="Telegram Groups IDs Fetcher">
-    <meta property="og:description" content="Secure Telegram login (code + 2FA), list groups, copy IDs, save config.">
-
-    <!-- Preconnect for Google Fonts -->
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-</head>
-<body>
-    <main class="container">
-        <header>
-            <h1><i class="fab fa-telegram"></i> Telegram Groups IDs Fetcher</h1>
-            <p>Enter your Telegram credentials to fetch group IDs and save configuration</p>
-        </header>
-
+  {% block content %}
         <div class="form-container">
+        <div>
+            <h1><i class="fab fa-telegram"></i> Enter your Telegram credentials</h1>
+        </div>
+
             <form id="listIdsForm">
                 <div class="form-grid">
                     <div class="form-group">
@@ -106,8 +86,4 @@
             <div id="messageBox" class="message-box"></div>
         </div>
 
-    </main>
-
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-</body>
-</html>
+  {% endblock %}

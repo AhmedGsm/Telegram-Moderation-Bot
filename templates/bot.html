@@ -1,14 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Run Moderation Bot</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='bot.css') }}">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
+{% extends 'base.html' %}
+{% block title %}Bot Setup{% endblock %}
+
+  {% block content %}
   <div class="container">
     <header>
       <h1><i class="fas fa-robot"></i> Moderation Bot</h1>
@@ -33,6 +26,36 @@
       <div id="messageBox" class="message-box"></div>
     </div>
   </div>
-<script src="{{ url_for('static', filename='bot.js') }}"></script>
-</body>
-</html>
+  {% endblock %}
+  {% block scripts %}
+    <script >
+      async function safeFetch(url, payload) {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload || {})
+        });
+        return res.json();
+      }
+
+      function showMessage(message, type = 'success') {
+        const box = document.getElementById('messageBox');
+        box.textContent = message;
+        box.className = `message-box ${type}`;
+        box.style.display = 'block';
+      }
+
+      document.getElementById('runBotBtn').addEventListener('click', async () => {
+        try {
+          const data = await safeFetch('/run_bot', {});
+          if (data.status === 'success') {
+            showMessage(data.message, 'success');
+          } else {
+            showMessage(data.message || 'Failed to start bot.', 'error');
+          }
+        } catch (e) {
+          showMessage('Error: ' + e.message, 'error');
+        }
+      });
+    </script>
+   {% endblock %}
