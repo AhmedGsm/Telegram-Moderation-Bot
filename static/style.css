@@ -7,7 +7,6 @@
 
 body {
     font-family: 'Poppins', sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #333;
     min-height: 100vh;
     padding: 0;
@@ -20,15 +19,19 @@ body {
 
 .container {
     margin: 0 auto;
-    background: rgba(255, 255, 255, 0.95);
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     overflow: hidden;
     flex-grow: 1;
 }
 
+.small-header {
+  
+    padding: 25px;
+    text-align: center;
+}
 
-header, .small-header {
+header {
     background: linear-gradient(90deg, #0088cc 0%, #00a2ff 100%);
     color: white;
     padding: 25px;

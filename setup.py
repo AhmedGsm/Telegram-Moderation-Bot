@@ -202,7 +202,7 @@ def run_bot():
     try:
         # Launch main.py as a subprocess
         subprocess.Popen(["python", "main.py"])
-        return jsonify({'status': 'success', 'message': 'Bot is starting in the background...'})
+        return jsonify({'status': 'success', 'message': 'Bot is running and start moderation...'})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
