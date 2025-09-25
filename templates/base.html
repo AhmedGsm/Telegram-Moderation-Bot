@@ -29,7 +29,7 @@
           <a href="{{ url_for('setup') }}" class="btn btn-primary">
             <i class="fas fa-cogs"></i> Get Started
           </a>
-          <a href="{{ url_for('bot_page') }}" class="btn btn-secondary">
+          <a href="{{ url_for('run_page') }}" class="btn btn-secondary">
             <i class="fas fa-play"></i> Run Bot
           </a>
         </div>
@@ -46,7 +46,7 @@
           </div>
           <ul class="nav-menu">
             <li>
-              <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+              <a href="{{ url_for('features') }}" class="nav-item {% if request.endpoint == 'features' %}active{% endif %}">
                 <i class="fas fa-star"></i>
                 <span>Features</span>
               </a>
@@ -58,7 +58,7 @@
               </a>
             </li>
             <li>
-              <a href="{{ url_for('bot_page') }}" class="nav-item {% if request.endpoint == 'bot_page' %}active{% endif %}">
+              <a href="{{ url_for('run_page') }}" class="nav-item {% if request.endpoint == 'run' %}active{% endif %}">
                 <i class="fas fa-play"></i>
                 <span>Run</span>
               </a>
@@ -99,7 +99,38 @@
   <div class="overlay"></div>
 
   {% block scripts %}
-  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  
+  <script>
+    
+  // === Mobile Menu Functionality (New UI Code) ===
+  const menuToggle = document.querySelector('.menu-toggle');
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.querySelector('.overlay');
+
+  function toggleMenu() {
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+    document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+  }
+
+  if (menuToggle) {
+    menuToggle.addEventListener('click', toggleMenu);
+  }
+  
+  if (overlay) {
+    overlay.addEventListener('click', toggleMenu);
+  }
+
+  // Close menu when clicking on nav items (mobile)
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', function() {
+      if (window.innerWidth <= 768) {
+        toggleMenu();
+      }
+    });
+  });
+  
+  </script>
   {% endblock %}
 </body>
 </html>

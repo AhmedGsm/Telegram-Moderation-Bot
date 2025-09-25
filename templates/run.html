@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Bot Setup{% endblock %}
+{% block title %}Start Bot{% endblock %}
 
   {% block content %}
   <div class="container">
@@ -28,6 +28,7 @@
   </div>
   {% endblock %}
   {% block scripts %}
+    {{ super() }}
     <script >
       async function safeFetch(url, payload) {
         const res = await fetch(url, {

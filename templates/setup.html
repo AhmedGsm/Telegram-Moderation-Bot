@@ -2,88 +2,99 @@
 {% block title %}Bot Setup{% endblock %}
 
   {% block content %}
-        <div class="form-container">
-        <div>
-            <h1><i class="fab fa-telegram"></i> Enter your Telegram credentials</h1>
-        </div>
+    <div class="form-container">
+    <div>
 
-            <form id="listIdsForm">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="user_id">Telegram User ID *</label>
-                        <input type="text" id="user_id" name="user_id" required>
-                    </div>
+    <div class="message-infos">
+        <h2><i class="fas fa-robot"></i> Enter your Telegram credentials</h2>
+        <p>Please fill in the form below to register your bot.
+        Enter your Telegram credentials carefully to connect the bot to your account.</p>
+    </div>
+    
+    </div>
 
-                    <div class="form-group">
-                        <label for="api_id">Telegram API ID *</label>
-                        <input type="text" id="api_id" name="api_id" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="api_hash">Telegram API Hash *</label>
-                        <input type="text" id="api_hash" name="api_hash" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="bot_token">Telegram Bot Token *</label>
-                        <input type="text" id="bot_token" name="bot_token" required>
-                    </div>
-
-
-
-                    <div class="form-group">
-                        <label for="username">Telegram Username *</label>
-                        <input type="text" id="username" name="username" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="phone">Telegram Phone Number *</label>
-                        <input type="tel" id="phone" name="phone" placeholder="+1234567890" required>
-                    </div>
+        <form id="listIdsForm">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="user_id">Telegram User ID *</label>
+                    <input type="text" id="user_id" name="user_id" required>
                 </div>
 
-                <div class="form-buttons">
-                    <button type="button" disabled id="listGroupsBtn" title="Fill in all the fields above and click this button to list group IDs." class="btn btn-secondary">
-                        <i class="fas fa-list"></i> List Groups IDs
-                    </button>
+                <div class="form-group">
+                    <label for="api_id">Telegram API ID *</label>
+                    <input type="text" id="api_id" name="api_id" required>
                 </div>
 
-            </form>
-            
-            <div id="groupsContainer" class="groups-container" style="display: none;">
-                <h2><i class="fas fa-users"></i> Your Groups and Channels</h2>
-                <div class="groups-list" id="groupsList">
-                    <!-- Groups will be displayed here -->
+                <div class="form-group">
+                    <label for="api_hash">Telegram API Hash *</label>
+                    <input type="text" id="api_hash" name="api_hash" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="bot_token">Telegram Bot Token *</label>
+                    <input type="text" id="bot_token" name="bot_token" required>
+                </div>
+
+
+
+                <div class="form-group">
+                    <label for="username">Telegram Username *</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Telegram Phone Number *</label>
+                    <input type="tel" id="phone" name="phone" placeholder="+1234567890" required>
                 </div>
             </div>
-            
-            <form id="registerForm" style="display: none;">
-                <div class="groups-div form-grid">
-                    <div class="form-group">
-                        <label for="source_group">Main Group ID *</label>
-                        <input type="text" id="source_group" name="source_group" required>
-                    </div>
 
-                    <div class="form-group">
-                        <label for="backup_group">Moderation Group ID *</label>
-                        <input type="text" id="backup_group" name="backup_group" required>
-                    </div>
-                </div>
-
-                <div class="form-buttons">
-                    <button type="button" id="registerBtn" disabled class="btn btn-primary" >
-                        <i class="fas fa-save"></i> Register
-                    </button>
-                </div>
-            </form>
-
-            <div id="runBotBtnContainer" class="" style="display: none;">
-                <button type="button" id="runBotBtn" class="btn btn-primary"  >
-                    <i class="fas fa-save"></i> Run Moderation Bot Now!
+            <div class="form-buttons">
+                <button type="button" disabled id="listGroupsBtn" title="Fill in all the fields above and click this button to list group IDs." class="btn btn-secondary">
+                    <i class="fas fa-list"></i> List Groups IDs
                 </button>
             </div>
-            
-            <div id="messageBox" class="message-box"></div>
-        </div>
 
+        </form>
+        
+        <div id="groupsContainer" class="groups-container" style="display: none;">
+            <h2><i class="fas fa-users"></i> Your Groups and Channels</h2>
+            <div class="groups-list" id="groupsList">
+                <!-- Groups will be displayed here -->
+            </div>
+        </div>
+        
+        <form id="registerForm" style="display: none;">
+            <div class="groups-div form-grid">
+                <div class="form-group">
+                    <label for="source_group">Main Group ID *</label>
+                    <input type="text" id="source_group" name="source_group" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="backup_group">Moderation Group ID *</label>
+                    <input type="text" id="backup_group" name="backup_group" required>
+                </div>
+            </div>
+
+            <div class="form-buttons">
+                <button type="button" id="registerBtn" disabled class="btn btn-primary" >
+                    <i class="fas fa-save"></i> Register
+                </button>
+            </div>
+        </form>
+
+        <div id="runBotBtnContainer" class="" style="display: none;">
+            <button type="button" id="runBotBtn" class="btn btn-primary"  >
+                <i class="fas fa-save"></i> Run Moderation Bot Now!
+            </button>
+        </div>
+        
+        <div id="messageBox" class="message-box"></div>
+    </div>
+
+  {% endblock %}
+  
+  {% block scripts %}
+    {{ super() }}
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
   {% endblock %}

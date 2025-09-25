@@ -28,8 +28,9 @@
   {% endblock %}
   
   {% block scripts %}
+    {{ super()  }}
     <script >
-          document.getElementById('goSetupBtn').addEventListener('click', function () {
+        document.getElementById('goSetupBtn').addEventListener('click', function () {
         window.location.href = "{{ url_for('setup') }}";
       });
 

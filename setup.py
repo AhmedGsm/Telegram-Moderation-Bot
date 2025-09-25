@@ -37,7 +37,11 @@ os.makedirs('config', exist_ok=True)
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return redirect(url_for('features'))
+
+@app.route('/features')
+def features():
+    return render_template('features.html')
 
 @app.route('/setup')
 def setup():
@@ -207,13 +211,18 @@ def run_bot():
         return jsonify({'status': 'error', 'message': str(e)})
 
 
-@app.route('/bot')
-def bot_page():
+@app.route('/run')
+def run_page():
     # If config.json doesn’t exist, redirect to setup page
     if not os.path.exists("config/config.json"):
-        return render_template("no-setup.html")
-    return render_template('bot.html')
+        return redirect(url_for('no_setup'))
+    return render_template('run.html')
+
+
+@app.route('/no-setup')
+def no_setup():
+    return render_template('no-setup.html')
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 4320))
+    port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=os.environ.get('DEBUG', True))

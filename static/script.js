@@ -1,31 +1,4 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // === Mobile Menu Functionality (New UI Code) ===
-  const menuToggle = document.querySelector('.menu-toggle');
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.querySelector('.overlay');
-
-  function toggleMenu() {
-    sidebar.classList.toggle('active');
-    overlay.classList.toggle('active');
-    document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
-  }
-
-  if (menuToggle) {
-    menuToggle.addEventListener('click', toggleMenu);
-  }
-  
-  if (overlay) {
-    overlay.addEventListener('click', toggleMenu);
-  }
-
-  // Close menu when clicking on nav items (mobile)
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', function() {
-      if (window.innerWidth <= 768) {
-        toggleMenu();
-      }
-    });
-  });
 
   // === ORIGINAL FUNCTIONALITY (Preserved) ===
   const registerBtn = document.getElementById('registerBtn');
