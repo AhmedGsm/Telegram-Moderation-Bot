@@ -2,12 +2,13 @@
 import asyncio
 import json
 from telethon import TelegramClient, events
+from telethon.sessions import StringSession
 from telethon.tl.types import MessageMediaPhoto
 from constants import *
 
 class TelegramPostManager:
     def __init__(self, api_id, api_hash, bot_token, source_group, backup_group, admin_id):
-        self.client = TelegramClient('bot_session', api_id, api_hash)
+        self.client = TelegramClient(StringSession(), api_id, api_hash)
         self.bot_token = bot_token
         self.source_group = source_group
         self.backup_group = backup_group
