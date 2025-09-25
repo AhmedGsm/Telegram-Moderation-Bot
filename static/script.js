@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const groupsContainer = document.getElementById('groupsContainer');
   const passwordVerification = document.getElementById('passwordVerification');
   const listForm = document.getElementById('listIdsForm');
+  const h1Title = document.querySelector('.form-container h1');
   const registerForm = document.getElementById('registerForm');
   const runBotButton = document.getElementById('runBotBtnContainer');
   const runBotBtn = document.getElementById('runBotBtn');
@@ -127,6 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     groupsContainer.style.display = 'block';
     listForm.style.display = 'none';
+    h1Title.style.display = 'none';
     registerForm.style.display = 'block';
 
     // reflect completion
