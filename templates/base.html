@@ -3,77 +3,103 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}This is a base template{% endblock %}</title>
+  <title>{% block title %}Telegram Moderation Bot{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
 </head>
 <body>
-  <main class="container">
-    <!-- Hero Section -->
-    <header class="hero">
-      <h1><i class="fas fa-robot"></i> Telegram Moderation Bot</h1>
-      <p class="tagline">Automate group moderation, backup messages, and keep your community safe.</p>
-      <div class="cta-buttons">
-        <a href="{{ url_for('setup') }}" class="btn btn-primary"><i class="fas fa-cogs"></i> Install Bot</a>
-        <a href="{{ url_for('bot_page') }}" class="btn btn-tertiary"><i class="fas fa-play"></i> Run Bot</a>
+  <!-- Mobile Menu Toggle -->
+  <button class="menu-toggle" aria-label="Toggle menu">
+    <i class="fas fa-bars"></i>
+  </button>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo">
+          <i class="fas fa-robot"></i>
+          <span>Telegram Bot</span>
+        </div>
+        <h1 class="header-title">Moderation & Backup Automation</h1>
+        <p class="header-subtitle">Automate group moderation, backup messages, and keep your community safe</p>
+        
+        <div class="header-actions">
+          <a href="{{ url_for('setup') }}" class="btn btn-primary">
+            <i class="fas fa-cogs"></i> Get Started
+          </a>
+          <a href="{{ url_for('bot_page') }}" class="btn btn-secondary">
+            <i class="fas fa-play"></i> Run Bot
+          </a>
+        </div>
       </div>
     </header>
-    <div class="middle-content">
-      <div class="menu">
 
-      <!-- Right Aside Menu -->
+    <!-- Main Content Area -->
+    <div class="main-layout">
+      <!-- Sidebar Navigation -->
       <aside class="sidebar">
-        <div class="sidebar-header">
-          <h3>🔧 Bot Controls</h3>
-          <button class="close-menu" aria-label="Close menu">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
         <nav class="sidebar-nav">
-          <ul>
+          <div class="nav-header">
+            <h3><i class="fas fa-sliders-h"></i> Control Panel</h3>
+          </div>
+          <ul class="nav-menu">
             <li>
-              <a href="{{ url_for('index') }}">
+              <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
                 <i class="fas fa-star"></i>
-                <span class="menu-text">Features</span>
+                <span>Features</span>
               </a>
             </li>
             <li>
-              <a href="{{ url_for('setup') }}">
+              <a href="{{ url_for('setup') }}" class="nav-item {% if request.endpoint == 'setup' %}active{% endif %}">
                 <i class="fas fa-cogs"></i>
-                <span class="menu-text">Setup</span>
+                <span>Setup</span>
               </a>
             </li>
             <li>
-              <a href="{{ url_for('bot_page') }}">
-                <i class="fas fa-play" ></i>
-                <span class="menu-text">Run</span>
+              <a href="{{ url_for('bot_page') }}" class="nav-item {% if request.endpoint == 'bot_page' %}active{% endif %}">
+                <i class="fas fa-play"></i>
+                <span>Run</span>
               </a>
             </li>
           </ul>
         </nav>
+        
         <div class="sidebar-footer">
-          <p>Telegram Moderation Bot v1.0</p>
+          <div class="version-info">
+            <i class="fas fa-code-branch"></i>
+            <span>v1.0.0</span>
+          </div>
         </div>
       </aside>
 
-      <!-- Overlay for closing menu when clicking outside -->
-      <div class="overlay"></div>
-      </div>
-      <main class="main-content">
-        {% block content %}{% endblock %}
+      <!-- Content Area -->
+      <main class="content-area">
+        <div class="content-wrapper">
+          {% block content %}{% endblock %}
+        </div>
       </main>
     </div>
+
     <!-- Footer -->
-    <footer>
-      <p>&copy; 2025 Telegram Moderation Bot | Designed for Envato Clients</p>
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p>&copy; 2025 Telegram Moderation Bot | Designed for Envato Clients</p>
+        <div class="footer-links">
+          <a href="#privacy">Privacy</a>
+          <a href="#terms">Terms</a>
+          <a href="#support">Support</a>
+        </div>
+      </div>
     </footer>
-  </main>
+  </div>
+
+  <!-- Overlay for mobile menu -->
+  <div class="overlay"></div>
 
   {% block scripts %}
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-   {% endblock %}
-
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  {% endblock %}
 </body>
 </html>

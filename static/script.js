@@ -1,8 +1,33 @@
 document.addEventListener('DOMContentLoaded', function() {
-
+  // === Mobile Menu Functionality (New UI Code) ===
+  const menuToggle = document.querySelector('.menu-toggle');
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.querySelector('.overlay');
 
+  function toggleMenu() {
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+    document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
+  }
+
+  if (menuToggle) {
+    menuToggle.addEventListener('click', toggleMenu);
+  }
+  
+  if (overlay) {
+    overlay.addEventListener('click', toggleMenu);
+  }
+
+  // Close menu when clicking on nav items (mobile)
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', function() {
+      if (window.innerWidth <= 768) {
+        toggleMenu();
+      }
+    });
+  });
+
+  // === ORIGINAL FUNCTIONALITY (Preserved) ===
   const registerBtn = document.getElementById('registerBtn');
   const listGroupsBtn = document.getElementById('listGroupsBtn');
   const verifyCodeBtn = document.getElementById('verifyCodeBtn');
@@ -17,11 +42,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const runBotBtn = document.getElementById('runBotBtn');
 
   // --- Helpers ---
-
   function showMessage(message, type = 'success') {
+    if (!messageBox) return;
+    
     messageBox.textContent = message;
     messageBox.className = `message-box ${type}`;
-    messageBox.style.display = 'block';            // ensure visible now
+    messageBox.style.display = 'block';
     clearTimeout(showMessage._t);
     showMessage._t = setTimeout(() => {
       messageBox.style.display = 'none';
@@ -29,6 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function setFormEnabled(formEl, enabled) {
+    if (!formEl) return;
     [...formEl.querySelectorAll('input, button')].forEach(el => {
       el.disabled = !enabled;
     });
@@ -36,9 +63,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function safeFetch(url, payload) {
     const headers = { 'Content-Type': 'application/json' };
-    // Optional CSRF header
-    // const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-    // if (csrf) headers['X-CSRF-Token'] = csrf;
 
     const res = await fetch(url, {
       method: 'POST',
@@ -46,7 +70,9 @@ document.addEventListener('DOMContentLoaded', function() {
       body: JSON.stringify(payload || {})
     });
     let json;
-    try { json = await res.json(); } catch {
+    try { 
+      json = await res.json(); 
+    } catch {
       throw new Error('Invalid server response.');
     }
     return json;
@@ -74,7 +100,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function buildGroupItem(group) {
-    // DOM-safe, avoids XSS via innerHTML on untrusted text
     const wrap = document.createElement('div');
     wrap.className = 'group-item';
 
@@ -115,6 +140,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function displayGroups(groups) {
     const groupsList = document.getElementById('groupsList');
+    if (!groupsList) return;
+
     groupsList.innerHTML = '';
 
     if (!groups || groups.length === 0) {
@@ -126,127 +153,288 @@ document.addEventListener('DOMContentLoaded', function() {
       groups.forEach(g => groupsList.appendChild(buildGroupItem(g)));
     }
 
-    groupsContainer.style.display = 'block';
-    listForm.style.display = 'none';
-    h1Title.style.display = 'none';
-    registerForm.style.display = 'block';
+    if (groupsContainer) groupsContainer.style.display = 'block';
+    if (listForm) listForm.style.display = 'none';
+    if (h1Title) h1Title.style.display = 'none';
+    if (registerForm) registerForm.style.display = 'block';
 
     // reflect completion
-    listGroupsBtn.innerHTML = "<i class='fas fa-list'></i> Fetching is done!";
+    if (listGroupsBtn) {
+      listGroupsBtn.innerHTML = "<i class='fas fa-list'></i> Fetching is done!";
+    }
   }
 
   function checkFormFields(form, btnId) {
     const button = document.getElementById(btnId);
+    if (!button || !form) return;
+
     const allFilled = [...form.querySelectorAll('input[required]')]
       .every(input => input.value.trim() !== '');
     button.disabled = !allFilled;
   }
 
   // --- Bind inputs to enable/disable buttons ---
+  if (listForm) {
+    document.querySelectorAll('#listIdsForm input[required]').forEach(input => {
+      input.addEventListener('input', () => checkFormFields(listForm, 'listGroupsBtn'));
+    });
+  }
 
-  document.querySelectorAll('#listIdsForm input[required]').forEach(input => {
-    input.addEventListener('input', () => checkFormFields(listForm, 'listGroupsBtn'));
-  });
-
-  document.querySelectorAll('#registerForm input[required]').forEach(input => {
-    input.addEventListener('input', () => checkFormFields(registerForm, 'registerBtn'));
-  });
+  if (registerForm) {
+    document.querySelectorAll('#registerForm input[required]').forEach(input => {
+      input.addEventListener('input', () => checkFormFields(registerForm, 'registerBtn'));
+    });
+  }
 
   // --- Button handlers ---
 
   // Register config
-  registerBtn.addEventListener('click', async function () {
-    const formData = {
-      user_id: document.getElementById('user_id').value,
-      api_id: document.getElementById('api_id').value,
-      api_hash: document.getElementById('api_hash').value,
-      bot_token: document.getElementById('bot_token').value,
-      source_group: document.getElementById('source_group').value,
-      backup_group: document.getElementById('backup_group').value
-    };
+  if (registerBtn) {
+    registerBtn.addEventListener('click', async function () {
+      const formData = {
+        user_id: document.getElementById('user_id')?.value,
+        api_id: document.getElementById('api_id')?.value,
+        api_hash: document.getElementById('api_hash')?.value,
+        bot_token: document.getElementById('bot_token')?.value,
+        source_group: document.getElementById('source_group')?.value,
+        backup_group: document.getElementById('backup_group')?.value
+      };
 
-    // Validate before disabling anything
-    for (const k in formData) {
-      if (!formData[k]) {
-        showMessage('Please fill all required fields', 'error');
-        return;
+      // Validate before disabling anything
+      for (const k in formData) {
+        if (!formData[k]) {
+          showMessage('Please fill all required fields', 'error');
+          return;
+        }
       }
-    }
 
-    setFormEnabled(registerForm, false);
-    try {
-      const data = await safeFetch('/save_config', formData);
-      if (data.status === 'success') {
-        showMessage(data.message, 'success');
-        registerForm.style.display = 'none';
-        groupsContainer.style.display = 'none';
-        // Show run bot button
-        runBotButton.style.display = "block";
-      } else {
-        showMessage(data.message || 'Failed to save configuration.', 'error');
+      setFormEnabled(registerForm, false);
+      try {
+        const data = await safeFetch('/save_config', formData);
+        if (data.status === 'success') {
+          showMessage(data.message, 'success');
+          if (registerForm) registerForm.style.display = 'none';
+          if (groupsContainer) groupsContainer.style.display = 'none';
+          // Show run bot button
+          if (runBotButton) runBotButton.style.display = "block";
+        } else {
+          showMessage(data.message || 'Failed to save configuration.', 'error');
+        }
+      } catch (e) {
+        showMessage('An error occurred: ' + e.message, 'error');
+      } finally {
+        setFormEnabled(registerForm, true);
       }
-    } catch (e) {
-      showMessage('An error occurred: ' + e.message, 'error');
-    } finally {
-      setFormEnabled(registerForm, true);
-    }
-  });
+    });
+  }
 
   // List groups
-  listGroupsBtn.addEventListener('click', async function () {
-    const formData = {
-      user_id: document.getElementById('user_id').value,
-      api_id: document.getElementById('api_id').value,
-      api_hash: document.getElementById('api_hash').value,
-      username: document.getElementById('username').value,
-      phone: document.getElementById('phone').value
-    };
+  if (listGroupsBtn) {
+    listGroupsBtn.addEventListener('click', async function () {
+      const formData = {
+        user_id: document.getElementById('user_id')?.value,
+        api_id: document.getElementById('api_id')?.value,
+        api_hash: document.getElementById('api_hash')?.value,
+        username: document.getElementById('username')?.value,
+        phone: document.getElementById('phone')?.value
+      };
 
-    // Validate before changing UI state
-    for (const k in formData) {
-      if (!formData[k]) {
-        showMessage('Please fill all above required fields', 'error');
-        return;
+      // Validate before changing UI state
+      for (const k in formData) {
+        if (!formData[k]) {
+          showMessage('Please fill all above required fields', 'error');
+          return;
+        }
       }
-    }
 
-    // Busy state
-    const originalContent = this.innerHTML;
-    this.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Fetching groups…";
-    this.disabled = true;
-    setFormEnabled(listForm, false);
+      // Busy state
+      const originalContent = this.innerHTML;
+      this.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Fetching groups…";
+      this.disabled = true;
+      setFormEnabled(listForm, false);
 
-    try {
-      const data = await safeFetch('/get_groups', formData);
-      if (data.status === 'success') {
-        displayGroups(data.groups || []);
-        showMessage('Groups fetched successfully.', 'success');
-      } else {
-        showMessage(data.message || 'Failed to fetch groups.', 'error');
-        // let the user try again
+      try {
+        const data = await safeFetch('/get_groups', formData);
+        if (data.status === 'success') {
+          displayGroups(data.groups || []);
+          showMessage('Groups fetched successfully.', 'success');
+        } else {
+          showMessage(data.message || 'Failed to fetch groups.', 'error');
+          // let the user try again
+          this.innerHTML = originalContent;
+          this.disabled = false;
+          setFormEnabled(listForm, true);
+        }
+      } catch (e) {
+        showMessage('An error occurred: ' + e.message, 'error');
         this.innerHTML = originalContent;
         this.disabled = false;
         setFormEnabled(listForm, true);
       }
-    } catch (e) {
-      showMessage('An error occurred: ' + e.message, 'error');
-      this.innerHTML = originalContent;
-      this.disabled = false;
-      setFormEnabled(listForm, true);
-    }
+    });
+  }
+
+  // Run bot
+  if (runBotBtn) {
+    runBotBtn.addEventListener('click', async function () {
+      try {
+        const data = await safeFetch('/run_bot', {});
+        if (data.status === 'success') {
+          showMessage(data.message, 'success');
+        } else {
+          showMessage(data.message || 'Failed to start bot.', 'error');
+        }
+      } catch (e) {
+        showMessage('An error occurred: ' + e.message, 'error');
+      }
+    });
+  }
+
+  // Verify code button (if exists)
+  if (verifyCodeBtn) {
+    verifyCodeBtn.addEventListener('click', async function () {
+      const code = document.getElementById('verification_code')?.value;
+      if (!code) {
+        showMessage('Please enter verification code', 'error');
+        return;
+      }
+
+      try {
+        const data = await safeFetch('/verify_code', { code: code });
+        if (data.status === 'success') {
+          showMessage(data.message, 'success');
+        } else {
+          showMessage(data.message || 'Verification failed.', 'error');
+        }
+      } catch (e) {
+        showMessage('An error occurred: ' + e.message, 'error');
+      }
+    });
+  }
+
+  // Verify password button (if exists)
+  if (verifyPasswordBtn) {
+    verifyPasswordBtn.addEventListener('click', async function () {
+      const password = document.getElementById('two_factor_password')?.value;
+      if (!password) {
+        showMessage('Please enter two-factor password', 'error');
+        return;
+      }
+
+      try {
+        const data = await safeFetch('/verify_2fa', { password: password });
+        if (data.status === 'success') {
+          showMessage(data.message, 'success');
+          if (passwordVerification) passwordVerification.style.display = 'none';
+        } else {
+          showMessage(data.message || 'Two-factor authentication failed.', 'error');
+        }
+      } catch (e) {
+        showMessage('An error occurred: ' + e.message, 'error');
+      }
+    });
+  }
+
+  // === Enhanced UI Features (New) ===
+  function setupFormValidation() {
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+      const inputs = form.querySelectorAll('input[required]');
+      const submitBtn = form.querySelector('button[type="button"]');
+      
+      if (submitBtn) {
+        function validateForm() {
+          const allFilled = Array.from(inputs).every(input => input.value.trim() !== '');
+          submitBtn.disabled = !allFilled;
+        }
+        
+        inputs.forEach(input => {
+          input.addEventListener('input', validateForm);
+          input.addEventListener('blur', function() {
+            if (!this.value.trim()) {
+              this.style.borderColor = 'var(--error)';
+            } else {
+              this.style.borderColor = '';
+            }
+          });
+        });
+        
+        validateForm();
+      }
+    });
+  }
+
+  setupFormValidation();
+
+  // Smooth scrolling for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    });
   });
 
-  runBotBtn.addEventListener('click', async function () {
-  try {
-    const data = await safeFetch('/run_bot', {});
-    if (data.status === 'success') {
-      showMessage(data.message, 'success');
+  // Add loading states to buttons
+  function setButtonLoading(button, isLoading) {
+    if (!button) return;
+    
+    if (isLoading) {
+      button.dataset.originalText = button.innerHTML;
+      button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+      button.disabled = true;
     } else {
-      showMessage(data.message || 'Failed to start bot.', 'error');
+      button.innerHTML = button.dataset.originalText;
+      button.disabled = false;
     }
-  } catch (e) {
-    showMessage('An error occurred: ' + e.message, 'error');
+  }
+
+  // Enhanced API call function with loading states
+  async function safeFetchWithLoading(url, payload, button = null) {
+    if (button) setButtonLoading(button, true);
+    
+    try {
+      const data = await safeFetch(url, payload);
+      return data;
+    } finally {
+      if (button) setButtonLoading(button, false);
+    }
+  }
+
+  // Update existing buttons to use enhanced loading (optional)
+  if (registerBtn) {
+    const originalRegisterHandler = registerBtn.onclick;
+    registerBtn.onclick = async function() {
+      await safeFetchWithLoading('/save_config', {
+        user_id: document.getElementById('user_id')?.value,
+        api_id: document.getElementById('api_id')?.value,
+        api_hash: document.getElementById('api_hash')?.value,
+        bot_token: document.getElementById('bot_token')?.value,
+        source_group: document.getElementById('source_group')?.value,
+        backup_group: document.getElementById('backup_group')?.value
+      }, registerBtn);
+      
+      // Call original handler logic
+      if (typeof originalRegisterHandler === 'function') {
+        originalRegisterHandler.call(this);
+      }
+    };
   }
 });
 
+// Responsive behavior
+window.addEventListener('resize', function() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.querySelector('.overlay');
+  
+  if (window.innerWidth > 768) {
+    if (sidebar) sidebar.classList.remove('active');
+    if (overlay) overlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
 });
