@@ -12,5 +12,5 @@ NOTIFICATION_NO_QUESTIONS = (
     "https://t.me/+B8OaGveY395hODQ0\n"
 )
 
-
+NOTIFICATION_NO_MORE_TEN_IMAGES = " Uploading more than 10 images is not allowed"
 DELETE_NOTIFICATION_DELAY = 12

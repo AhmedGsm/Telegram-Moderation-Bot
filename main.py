@@ -1,10 +1,12 @@
-
 import asyncio
 import json
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession
 from telethon.tl.types import MessageMediaPhoto
 from constants import *
+import time
+import random
+
 
 class TelegramPostManager:
     def __init__(self, api_id, api_hash, bot_token, source_group, backup_group, admin_id):
@@ -17,6 +19,9 @@ class TelegramPostManager:
         self.user_id = -1000
         self.full_post = False
         self.notification_message = ""
+        self.max_image_process_time = 0.3
+        self.images_album_counted = 1
+        self.mTime = 0
 
     async def start(self):
         await self.client.start(bot_token=self.bot_token)
@@ -42,18 +47,25 @@ class TelegramPostManager:
 
             # Handle media albums
             if self.user_id != self.admin_id:
-                if event.message.grouped_id:
-                    print("Processing album!!")
-                    await self.process_album(event)
-                # Handle single messages
+                print("Processing album!!")
+                interval = time.time() - self.mTime
+                if interval < self.max_image_process_time:
+                    self.images_album_counted += 1
+                    print("An image is added album--> Image N: " + str(self.images_album_counted))
                 else:
-                    await self.process_single_message(event)
+                    self.images_album_counted = 1
+                    print("A new album is ulpoading..: " + str(self.images_album_counted))
 
+                self.mTime = time.time()
+                await self.process_album(event)
         except Exception as e:
             print(f"Error processing message: {e}")
 
     async def check_if_full_post(self, event):
-        if event.message.message and event.message.media:
+        if self.images_album_counted > 10:
+            self.notification_message = NOTIFICATION_NO_MORE_TEN_IMAGES
+            self.full_post = False
+        elif event.message.message and event.message.media:
             self.notification_message = NOTIFICATION_HIDE_FOR_MODERATION
             self.full_post = True
         elif event.message.media:
