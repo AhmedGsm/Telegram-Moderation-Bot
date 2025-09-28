@@ -10,7 +10,7 @@ import random
 
 class TelegramPostManager:
     def __init__(self, api_id, api_hash, bot_token, source_group, backup_group, admin_id):
-        self.client = TelegramClient(StringSession(), api_id, api_hash)
+        self.client = TelegramClient("StringSession()", api_id, api_hash)
         self.bot_token = bot_token
         self.source_group = source_group
         self.backup_group = backup_group
@@ -19,9 +19,11 @@ class TelegramPostManager:
         self.user_id = -1000
         self.full_post = False
         self.notification_message = ""
-        self.max_image_process_time = 0.3
-        self.images_album_counted = 1
+        self.max_image_process_time = 1
+        self.images_album_counted = 0
         self.mTime = 0
+        self.album_messages = []
+        self.is_album_processed = False
 
     async def start(self):
         await self.client.start(bot_token=self.bot_token)
@@ -30,6 +32,7 @@ class TelegramPostManager:
         await self.client.run_until_disconnected()
 
     async def handle_new_message(self, event):
+        self.mTime = time.time()
         # Ignore messages from Haris_BOT to prevent infinite loop
         if event.message.from_id.user_id == 8162000565:
             return
@@ -47,25 +50,65 @@ class TelegramPostManager:
 
             # Handle media albums
             if self.user_id != self.admin_id:
-                print("Processing album!!")
+                print("event.message.grouped_id: " + str(event.message.grouped_id))
                 interval = time.time() - self.mTime
+                print("interval Time: " + str(interval))
                 if interval < self.max_image_process_time:
                     self.images_album_counted += 1
                     print("An image is added album--> Image N: " + str(self.images_album_counted))
+                    self.album_messages.append(event.message)
+
+                    await asyncio.sleep(5)
+
+                    if not self.is_album_processed : # and self.images_album_counted > 10
+                        self.is_album_processed = True
+                        await self.process_album(event)
+                        self.images_album_counted = 0
                 else:
-                    self.images_album_counted = 1
+                    self.album_messages = []
+                    self.is_album_processed = False
                     print("A new album is ulpoading..: " + str(self.images_album_counted))
 
-                self.mTime = time.time()
-                await self.process_album(event)
+
         except Exception as e:
             print(f"Error processing message: {e}")
 
-    async def check_if_full_post(self, event):
+    async def process_album(self, event):
+        """Handle media albums by grouping them"""
+        # Sort by ID to maintain original order
+        self.album_messages.sort(key=lambda msg: msg.id)
+
+        # If a user is posted image or album plus text enable posting,
+        # Else disable posting
         if self.images_album_counted > 10:
+            self.full_post = True
+        else:
+            await self.check_if_full_post(event)
+
+        # Forward album to backup
+        if self.full_post:
+            await self.client.forward_messages(
+                entity=self.backup_group,
+                messages=[msg.id for msg in self.album_messages],
+                from_peer=self.source_group
+            )
+
+        # Delete all album parts
+        await self.client.delete_messages(self.source_group, [msg.id for msg in self.album_messages])
+
+        # Reset album precessing state
+        #await asyncio.sleep(1)
+        self.is_album_processed = False
+        self.full_post = False
+        # Send notification
+        await self.notify_user(event, self.notification_message)
+
+
+    async def check_if_full_post(self, event):
+        """if self.images_album_counted > 10:
             self.notification_message = NOTIFICATION_NO_MORE_TEN_IMAGES
-            self.full_post = False
-        elif event.message.message and event.message.media:
+            self.full_post = False"""
+        if event.message.message and event.message.media:
             self.notification_message = NOTIFICATION_HIDE_FOR_MODERATION
             self.full_post = True
         elif event.message.media:
@@ -96,39 +139,6 @@ class TelegramPostManager:
         # Send notification
         await self.notify_user(event, self.notification_message)
 
-    async def process_album(self, event):
-        """Handle media albums by grouping them"""
-        album_id = event.message.grouped_id
-        album_messages = self.pending_albums.setdefault(album_id, [])
-        album_messages.append(event.message)
-
-        # Wait 1 second to collect all album parts
-        await asyncio.sleep(1)
-        if album_id not in self.pending_albums:
-            return
-
-        messages = self.pending_albums.pop(album_id)
-
-        # Sort by ID to maintain original order
-        messages.sort(key=lambda msg: msg.id)
-
-        # If a user is posted image or album plus text enable posting,
-        # Else disable posting
-        await self.check_if_full_post(event)
-
-        # Forward album to backup
-        if self.full_post:
-            await self.client.forward_messages(
-                entity=self.backup_group,
-                messages=[msg.id for msg in messages],
-                from_peer=self.source_group
-            )
-
-        # Delete all album parts
-        await self.client.delete_messages(self.source_group, [msg.id for msg in messages])
-
-        # Send notification
-        await self.notify_user(event, self.notification_message)
 
     async def forward_album(self, messages):
         """Forward entire album preserving grouping"""
