@@ -18,12 +18,17 @@ class TelegramPostManager:
         self.pending_albums = {}  # Track album groupings
         self.user_id = -1000
         self.full_post = False
-        self.notification_message = ""
+        self.notification_message = NOTIFICATION_HIDE_FOR_MODERATION
         self.max_image_process_time = 1
         self.images_album_counted = 0
         self.mTime = 0
         self.album_messages = []
         self.is_album_processed = False
+        self.album_dict = {"single": []
+                           }
+        self.require_image_and_text = False
+        self.is_text_uploaded = False
+        self.is_media_uploaded = False
 
     async def start(self):
         await self.client.start(bot_token=self.bot_token)
@@ -50,73 +55,87 @@ class TelegramPostManager:
 
             # Handle media albums
             if self.user_id != self.admin_id:
-                print("event.message.grouped_id: " + str(event.message.grouped_id))
-                interval = time.time() - self.mTime
-                print("interval Time: " + str(interval))
-                if interval < self.max_image_process_time:
-                    self.images_album_counted += 1
-                    print("An image is added album--> Image N: " + str(self.images_album_counted))
-                    self.album_messages.append(event.message)
-
-                    await asyncio.sleep(5)
-
-                    if not self.is_album_processed : # and self.images_album_counted > 10
-                        self.is_album_processed = True
-                        await self.process_album(event)
-                        self.images_album_counted = 0
-                else:
-                    self.album_messages = []
-                    self.is_album_processed = False
-                    print("A new album is ulpoading..: " + str(self.images_album_counted))
-
-
+                #print("event.message.grouped_id: " + str(event.message.grouped_id))
+                await self.process_album(event)
         except Exception as e:
             print(f"Error processing message: {e}")
 
     async def process_album(self, event):
         """Handle media albums by grouping them"""
         # Sort by ID to maintain original order
-        self.album_messages.sort(key=lambda msg: msg.id)
+        #self.album_messages.sort(key=lambda msg: msg.id)
+
+        # Group Id of a message
+        message_group_id = event.message.grouped_id
+
+        # Check if text is uploaded
+        if event.message.message:
+            self.is_text_uploaded = True
+
+        # Check if image or media is uploaded
+        if event.message.media:
+            self.is_media_uploaded = True
 
         # If a user is posted image or album plus text enable posting,
         # Else disable posting
-        if self.images_album_counted > 10:
-            self.full_post = True
+        if not message_group_id:# Text message
+            self.album_dict["single"].append(event.message)
         else:
-            await self.check_if_full_post(event)
+            self.album_dict.setdefault(message_group_id, []).append(event.message)
+
+        # Pause a moment
+        await asyncio.sleep(3)
 
         # Forward album to backup
-        if self.full_post:
-            await self.client.forward_messages(
-                entity=self.backup_group,
-                messages=[msg.id for msg in self.album_messages],
-                from_peer=self.source_group
-            )
+        if not self.is_album_processed:
+            self.is_album_processed = True
 
+            # If text + image required than validate before transferring
+            if self.require_image_and_text:
+                if not await self.check_if_full_post(event):
+                    self.is_album_processed = False
+                    return
+
+            for album in self.album_dict.values():
+                album.sort(key=lambda msg: msg.id)
+                if album:
+                    await self.client.forward_messages(
+                        entity=self.backup_group,
+                        messages=[msg.id for msg in album],
+                        from_peer=self.source_group
+                    )
+
+            await self.delete_post_and_notify(event)
+
+            await asyncio.sleep(0.5)
+            self.album_dict = {"single": [],
+                               }
+            self.is_album_processed = False
+            self.is_text_uploaded = False
+            self.is_media_uploaded = False
+
+    async def delete_post_and_notify(self, event):
         # Delete all album parts
-        await self.client.delete_messages(self.source_group, [msg.id for msg in self.album_messages])
-
-        # Reset album precessing state
-        #await asyncio.sleep(1)
-        self.is_album_processed = False
-        self.full_post = False
+        for album in self.album_dict.values():
+            if album:
+                await self.client.delete_messages(self.source_group, [msg.id for msg in album])
         # Send notification
         await self.notify_user(event, self.notification_message)
 
-
     async def check_if_full_post(self, event):
-        """if self.images_album_counted > 10:
-            self.notification_message = NOTIFICATION_NO_MORE_TEN_IMAGES
-            self.full_post = False"""
-        if event.message.message and event.message.media:
-            self.notification_message = NOTIFICATION_HIDE_FOR_MODERATION
-            self.full_post = True
-        elif event.message.media:
-            self.full_post = False
+        if not self.is_text_uploaded:
             self.notification_message = NOTIFICATION_INSERT_PRODUCT_DEF
-        elif event.message.message:
-            self.full_post = False
-            self.notification_message = NOTIFICATION_NO_QUESTIONS
+            self.is_media_uploaded = False
+            await self.delete_post_and_notify(event)
+            return None
+        elif not self.is_media_uploaded:
+            self.notification_message = NOTIFICATION_NO_COMMENTS
+            self.is_text_uploaded = False
+            await self.delete_post_and_notify(event)
+            return None
+        else:
+            self.notification_message = NOTIFICATION_HIDE_FOR_MODERATION
+        return True
 
     async def process_single_message(self, event):
         """Process non-album messages"""

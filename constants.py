@@ -5,7 +5,7 @@ NOTIFICATION_INSERT_PRODUCT_DEF = (
     " يرجى كتابة إسم ووصف المنتج\n"
     " \n\n\n"
 )
-NOTIFICATION_NO_QUESTIONS = (
+NOTIFICATION_NO_COMMENTS = (
     "\n\n\n"
     "لطرح الإستفسارات أو الأسئلة، أو طلب منتجات، يرجى زيارة المجموعة التالية: "
     "\n\n\n"
@@ -13,4 +13,4 @@ NOTIFICATION_NO_QUESTIONS = (
 )
 
 NOTIFICATION_NO_MORE_TEN_IMAGES = " Uploading more than 10 images is not allowed"
-DELETE_NOTIFICATION_DELAY = 12
+DELETE_NOTIFICATION_DELAY = 3
