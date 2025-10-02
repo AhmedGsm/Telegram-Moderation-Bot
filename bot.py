@@ -7,16 +7,14 @@ from constants import *
 import time
 import random
 
-
-class TelegramPostManager:
-    def __init__(self, api_id, api_hash, bot_token, source_group, backup_group, admin_id):
-        self.client = TelegramClient("StringSession()", api_id, api_hash)
-        self.bot_token = bot_token
+class User:
+    def __init__(self, client, source_group, backup_group, admin_id):
+        self.pending_albums = {}  # Track album groupings
+        self.user_id = -1000
         self.source_group = source_group
         self.backup_group = backup_group
         self.admin_id = admin_id
-        self.pending_albums = {}  # Track album groupings
-        self.user_id = -1000
+        self.client = client
         self.full_post = False
         self.notification_message = NOTIFICATION_HIDE_FOR_MODERATION
         self.max_image_process_time = 1
@@ -26,39 +24,23 @@ class TelegramPostManager:
         self.is_album_processed = False
         self.album_dict = {"single": []
                            }
-        self.require_image_and_text = False
+        self.require_image_and_text = True
         self.is_text_uploaded = False
         self.is_media_uploaded = False
+        self.previousTime = time.time()
 
-    async def start(self):
-        await self.client.start(bot_token=self.bot_token)
-        print("Bot started successfully")
-        self.client.add_event_handler(self.handle_new_message, events.NewMessage(chats=self.source_group))
-        await self.client.run_until_disconnected()
-
-    async def handle_new_message(self, event):
-        self.mTime = time.time()
-        # Ignore messages from Haris_BOT to prevent infinite loop
-        if event.message.from_id.user_id == 8162000565:
+    async def process_message(self, event):
+        #try:
+        # Ignore service messages and bot commands
+        if not event.message.message and not event.message.media:
             return
 
-        # Get user details
-        sender = await event.get_sender()
-        self.user_id = sender.id
-        username = sender.username or sender.first_name
-        print(f"User ID: {self.user_id}, Username: @{username}")
-
-        try:
-            # Ignore service messages and bot commands
-            if not event.message.message and not event.message.media:
-                return
-
-            # Handle media albums
-            if self.user_id != self.admin_id:
-                #print("event.message.grouped_id: " + str(event.message.grouped_id))
-                await self.process_album(event)
-        except Exception as e:
-            print(f"Error processing message: {e}")
+        # Handle media albums
+        if self.user_id != self.admin_id:
+            #print("event.message.grouped_id: " + str(event.message.grouped_id))
+            await self.process_album(event)
+        #except Exception as e:
+        #    print(f"Error processing message: {e}")
 
     async def process_album(self, event):
         """Handle media albums by grouping them"""
@@ -84,6 +66,10 @@ class TelegramPostManager:
             self.album_dict.setdefault(message_group_id, []).append(event.message)
 
         # Pause a moment
+        tm = time.time()
+        elapsed = time.time() - self.previousTime
+        print("Elapsed Time" + str(elapsed))
+        self.previousTime = tm
         await asyncio.sleep(3)
 
         # Forward album to backup
@@ -195,6 +181,46 @@ class TelegramPostManager:
             print("Message notification deleted!!")
         except Exception as e:
             print(f"Failed to delete notification: {e}")
+
+
+
+class TelegramPostManager:
+    def __init__(self, api_id, api_hash, bot_token, source_group, backup_group, admin_id):
+        self.client = TelegramClient("StringSession()", api_id, api_hash)
+        self.bot_token = bot_token
+        self.source_group = source_group
+        self.backup_group = backup_group
+        self.admin_id = admin_id
+        self.users_instances = {}
+        self.lock = asyncio.Lock()
+
+    async def start(self):
+        await self.client.start(bot_token=self.bot_token)
+        print("Bot started successfully")
+        self.client.add_event_handler(self.handle_new_message, events.NewMessage(chats=self.source_group))
+        await self.client.run_until_disconnected()
+
+    async def handle_new_message(self, event):
+        self.mTime = time.time()
+        # Ignore messages from Haris_BOT to prevent infinite loop
+        if event.message.from_id.user_id == 8162000565:
+            return
+
+        # Get user details
+        sender = await event.get_sender()
+        user_id = sender.id
+        username = sender.username or sender.first_name
+        print(f"User ID: {user_id}, Username: @{username}")
+
+        # Create User Instance
+        async with self.lock:
+            user_instance = self.users_instances.setdefault(
+                user_id,
+                User(self.client, self.source_group, self.backup_group, self.admin_id)
+            )
+
+        # Process album
+        await user_instance.process_message(event)
 
 if __name__ == "__main__":
     # Configuration (use environment variables in production)
