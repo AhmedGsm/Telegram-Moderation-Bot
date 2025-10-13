@@ -15,19 +15,12 @@ class User:
         self.backup_group = backup_group
         self.admin_id = admin_id
         self.client = client
-        self.full_post = False
         self.notification_message = NOTIFICATION_HIDE_FOR_MODERATION
-        self.max_image_process_time = 1
-        self.images_album_counted = 0
-        self.mTime = 0
         self.album_messages = []
         self.is_album_processed = False
         self.album_dict = {"single": []
                            }
         self.require_image_and_text = False
-        self.is_text_uploaded = False
-        self.is_media_uploaded = False
-        self.previousTime = time.time()
         self.task = None
         self.timeout = 2
 
@@ -92,13 +85,7 @@ class User:
         # Forward album to backup
         if not self.is_album_processed:
             self.is_album_processed = True
-
-            # If text + image required than validate before transferring
-            if self.require_image_and_text:
-                if not await self.check_if_full_post(event):
-                    self.is_album_processed = False
-                    return
-
+            # Send Album
             await self.send_album(event)
 
     async def send_album(self, event):
@@ -129,8 +116,6 @@ class User:
         self.album_dict = {"single": [],
                            }
         self.is_album_processed = False
-        self.is_text_uploaded = False
-        self.is_media_uploaded = False
 
     async def delete_post_and_notify(self, event):
         # Delete all album parts
@@ -139,21 +124,6 @@ class User:
                 await self.client.delete_messages(self.source_group, [msg.id for msg in album])
         # Send notification
         await self.notify_user(event, self.notification_message)
-
-    async def check_if_full_post(self, event):
-        if not self.is_text_uploaded:
-            self.notification_message = NOTIFICATION_INSERT_PRODUCT_DEF
-            self.is_media_uploaded = False
-            await self.delete_post_and_notify(event)
-            return None
-        elif not self.is_media_uploaded:
-            self.notification_message = NOTIFICATION_NO_COMMENTS
-            self.is_text_uploaded = False
-            await self.delete_post_and_notify(event)
-            return None
-        else:
-            self.notification_message = NOTIFICATION_HIDE_FOR_MODERATION
-        return True
 
     async def process_single_message(self, event):
         """Process non-album messages"""
@@ -233,7 +203,6 @@ class TelegramPostManager:
         await self.client.run_until_disconnected()
 
     async def handle_new_message(self, event):
-        self.mTime = time.time()
         # Ignore messages from Haris_BOT to prevent infinite loop
         if event.message.from_id.user_id == 8162000565:
             return
