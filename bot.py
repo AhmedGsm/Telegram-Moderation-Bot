@@ -26,35 +26,21 @@ class User:
 
     async def process_message(self, event):
         print("def process_message")
-        #try:
-        # Ignore service messages and bot commands
-        if not event.message.message and not event.message.media:
-            return
+        try:
+            # Ignore service messages and bot commands
+            if not event.message.message and not event.message.media:
+                return
 
-        # Handle media albums
-        if self.user_id != self.admin_id:
+            # Handle media albums
+            if self.user_id != self.admin_id:
+                await self.process_album(event)
 
-            # Start a new debounce timer
-            previousTime = time.time()
-            self.task = asyncio.create_task(self.process_album(event))
-            #print("asyncio.create_task running time is: " + str(time.time() - previousTime))
-            #tsk = self.task
-            #if tsk:
-            #    print("task is created and is not None!!")
-
-            #print("self.task returns: " + str(tsk))
-            # Start a moment to let task to be assigned
-            #await asyncio.sleep(0.5)
-
-        #except Exception as e:
-        #    print(f"Error processing message: {e}")
+        except Exception as e:
+            print(f"Error processing message: {e}")
 
     async def process_album(self, event):
         """Handle media albums by grouping them"""
         print("def process_album")
-        # Sort by ID to maintain original order
-        #self.album_messages.sort(key=lambda msg: msg.id)
-        # Cancel any pending task
         # Group Id of a message
         message_group_id = event.message.grouped_id
 
@@ -66,21 +52,10 @@ class User:
         if event.message.media:
             self.is_media_uploaded = True
 
-        # If a user is posted image or album plus text enable posting,
-        # Else disable posting
         if not message_group_id:# Text message
             self.album_dict["single"].append(event.message)
         else:
             self.album_dict.setdefault(message_group_id, []).append(event.message)
-
-        # Pause a moment
-        #await asyncio.sleep(3)
-        """try:
-            await asyncio.sleep(self.timeout)
-            print("task completed(timeout reached !!")
-        except asyncio.CancelledError:
-            print("asyncio.CancelledError")
-            return  # restarted, so ignore"""
 
         # Forward album to backup
         if not self.is_album_processed:
@@ -90,17 +65,8 @@ class User:
 
     async def send_album(self, event):
         print("def send_album")
-        # Jump to previous task then run the below code!!
+        # Wait to allow processing next images to be added to album
         await asyncio.sleep(3)
-        # Cancel previous task to assign full album
-        """if self.task : #and not self.task.done()
-        
-            self.task.cancel()
-            print("self.task = " + str(self.task))
-            print("task canceled --> going to return!!")
-            return
-        else:
-            print("self.task = None")"""
 
         for album in self.album_dict.values():
             album.sort(key=lambda msg: msg.id)
@@ -113,7 +79,7 @@ class User:
 
                 print("Album forwarded (self.client.forward_messages)")
         await self.delete_post_and_notify(event)
-        #await asyncio.sleep(0.5)
+
         self.album_dict = {"single": [],
                            }
         self.is_album_processed = False
@@ -125,46 +91,6 @@ class User:
                 await self.client.delete_messages(self.source_group, [msg.id for msg in album])
         # Send notification
         await self.notify_user(event, self.notification_message)
-
-    async def process_single_message(self, event):
-        """Process non-album messages"""
-        # Copy to backup group
-
-        # If a user is posted image or album plus text enable posting,
-        # Else disable posting
-        await self.check_if_full_post(event)
-
-        if self.full_post:
-            await self.client.forward_messages(
-                entity=self.backup_group,
-                messages=event.message.id,
-                from_peer=self.source_group
-            )
-
-        # Delete from source group
-        await event.message.delete()
-
-        # Send notification
-        await self.notify_user(event, self.notification_message)
-
-
-    async def forward_album(self, messages):
-        """Forward entire album preserving grouping"""
-        media = []
-        caption = ""
-
-        for msg in messages:
-            if msg.message:
-                caption = msg.message
-            if isinstance(msg.media, MessageMediaPhoto):
-                media.append(msg.media)
-
-        await self.client.send_file(
-            self.backup_group,
-            media,
-            caption=caption,
-            link_preview=False
-        )
 
     async def notify_user(self, event, message):
         """Notify user about hidden post"""
@@ -204,15 +130,18 @@ class TelegramPostManager:
         await self.client.run_until_disconnected()
 
     async def handle_new_message(self, event):
-        # Ignore messages from Haris_BOT to prevent infinite loop
-        if event.message.from_id.user_id == 8162000565:
+        # Let the admin to post and forwar
+        with open("config/config.json") as f:
+            config = json.load(f)
+        admin_id = int(config["ADMIN_SENDER_ID"])
+
+        user_id = event.message.from_id.user_id
+        if user_id == admin_id:
             return
 
         # Get user details
         sender = await event.get_sender()
         user_id = sender.id
-        username = sender.username or sender.first_name
-        #print(f"User ID: {user_id}, Username: @{username}")
 
         # Create User Instance
         async with self.lock:
