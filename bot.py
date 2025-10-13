@@ -94,6 +94,7 @@ class User:
         await asyncio.sleep(3)
         # Cancel previous task to assign full album
         """if self.task : #and not self.task.done()
+        
             self.task.cancel()
             print("self.task = " + str(self.task))
             print("task canceled --> going to return!!")
