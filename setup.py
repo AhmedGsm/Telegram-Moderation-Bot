@@ -89,29 +89,29 @@ def get_groups():
         asyncio.set_event_loop(loop)
 
         groups = []
-        with TelegramClient(username, api_id, api_hash) as client:
-            # Check if we need to sign in
-            if not client.is_connected():
-                client.connect()
+        client = TelegramClient(username, api_id, api_hash)
+        # Check if we need to sign in
+        if not client.is_connected():
+            client.connect()
 
-            if not client.is_user_authorized():
-                # Send code request
-                client.send_code_request(phone)
-                session['client'] = client.session.save()
-                return jsonify({
-                    'status': 'code_required',
-                    'message': 'Verification code sent to your Telegram account. Please enter it below.'
+        if not client.is_user_authorized():
+            # Send code request
+            client.send_code_request(phone)
+            session['client'] = client.session.save()
+            return jsonify({
+                'status': 'code_required',
+                'message': 'Verification code sent to your Telegram account. Please enter it below.'
+            })
+
+        # Get all dialogs
+        dialogs = client.get_dialogs()
+        for dialog in dialogs:
+            if dialog.is_group or dialog.is_channel:
+                groups.append({
+                    'name': dialog.name,
+                    'id': dialog.id,
+                    'type': 'Channel' if dialog.is_channel else 'Group'
                 })
-
-            # Get all dialogs
-            dialogs = client.get_dialogs()
-            for dialog in dialogs:
-                if dialog.is_group or dialog.is_channel:
-                    groups.append({
-                        'name': dialog.name,
-                        'id': dialog.id,
-                        'type': 'Channel' if dialog.is_channel else 'Group'
-                    })
 
         return jsonify({'status': 'success', 'groups': groups})
 
@@ -225,4 +225,4 @@ def no_setup():
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=os.environ.get('DEBUG', True))
+    app.run(host='0.0.0.0', port=port, debug=os.environ.get('DEBUG', True), use_reloader=False)

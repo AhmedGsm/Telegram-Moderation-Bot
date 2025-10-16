@@ -231,6 +231,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.status === 'success') {
           displayGroups(data.groups || []);
           showMessage('Groups fetched successfully.', 'success');
+        }
+        else if (data.status === 'code_required') {
+            showMessage(data.message, 'success');
         } else {
           showMessage(data.message || 'Failed to fetch groups.', 'error');
           // let the user try again
