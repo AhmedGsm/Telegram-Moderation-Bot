@@ -13,6 +13,14 @@ document.addEventListener('DOMContentLoaded', function() {
   const registerForm = document.getElementById('registerForm');
   const runBotButton = document.getElementById('runBotBtnContainer');
   const runBotBtn = document.getElementById('runBotBtn');
+  const codeInputs = document.querySelectorAll('.code-input');
+  const fullCodeInput = document.getElementById('full-code');
+  const dialog_overlay = document.querySelector('.dialog-overlay');
+  const form = document.getElementById('verification-form');
+  const messageContainer = document.querySelector('.message-container');
+  const submitBtn = document.getElementById('submit-btn');
+  const closeBtn = document.querySelector('.close-btn');
+  const resendLink = document.getElementById('resend-link');
 
   // --- Helpers ---
   function showMessage(message, type = 'success') {
@@ -234,6 +242,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         else if (data.status === 'code_required') {
             showMessage(data.message, 'success');
+            // Display code introduction dialog
+            dialog_overlay.style.display = "block";
+
         } else {
           showMessage(data.message || 'Failed to fetch groups.', 'error');
           // let the user try again
@@ -401,14 +412,6 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     };
   }
-});
-    const codeInputs = document.querySelectorAll('.code-input');
-    const fullCodeInput = document.getElementById('full-code');
-    const form = document.getElementById('verification-form');
-    const messageContainer = document.querySelector('.message-container');
-    const submitBtn = document.getElementById('submit-btn');
-    const closeBtn = document.querySelector('.close-btn');
-    const resendLink = document.getElementById('resend-link');
 
     // Focus management for code inputs
     codeInputs.forEach((input, index) => {
@@ -498,3 +501,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // In a real app, you would make an API call to resend the code
     });
+});
