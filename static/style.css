@@ -737,3 +737,198 @@ body {
   font-size: 1.5rem;
   margin-bottom: 1rem;
 }
+
+/* Telegram verification code form */
+.dialog-overlay {
+    background-color: rgba(44, 40, 40, 0.85);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    position: fixed;
+    left: 0;
+    top: 0%;
+    width: 100%;
+    height: 100%;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.dialog-container {
+    border-radius: 16px;
+    background-color: #d7eee7;
+    width: 450px;
+    max-width: 90vw;
+    padding: 30px;
+    transform: translate(-50%, -50%);
+    position: fixed;
+    left: 50%;
+    top: 50%;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dialog-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.dialog-header h2 {
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.dialog-header p {
+    color: #666;
+    font-size: 14px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #444;
+    font-weight: 500;
+}
+
+.code-input-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.code-input {
+    width: 60px;
+    height: 60px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.7);
+    transition: all 0.3s;
+}
+
+.code-input:focus {
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+    outline: none;
+    background-color: white;
+}
+
+.code-input.filled {
+    border-color: #4CAF50;
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.message-container {
+    min-height: 60px;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 15px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+}
+
+.message-container.error {
+    background-color: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    color: #d32f2f;
+}
+
+.message-container.success {
+    background-color: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    color: #388e3c;
+}
+
+.message-container.info {
+    background-color: rgba(33, 150, 243, 0.1);
+    border: 1px solid rgba(33, 150, 243, 0.3);
+    color: #1976d2;
+}
+
+.message-icon {
+    margin-right: 10px;
+    font-size: 20px;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(to right, #4a90e2, #5fa5ff);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 10px;
+}
+
+.submit-btn:hover {
+    background: linear-gradient(to right, #3a80d2, #4f95ef);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.submit-btn:active {
+    transform: translateY(0);
+}
+
+.submit-btn:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.resend-link {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+.resend-link a {
+    color: #4a90e2;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.resend-link a:hover {
+    text-decoration: underline;
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 22px;
+    color: #777;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.close-btn:hover {
+    color: #333;
+}
+
+@media (max-width: 480px) {
+    .dialog-overlay {
+        padding: 20px;
+    }
+
+    .code-input {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+}
