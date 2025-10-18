@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 
   // === ORIGINAL FUNCTIONALITY (Preserved) ===
   const registerBtn = document.getElementById('registerBtn');
@@ -16,11 +16,13 @@ document.addEventListener('DOMContentLoaded', function() {
   const codeInputs = document.querySelectorAll('.code-input');
   const fullCodeInput = document.getElementById('full-code');
   const dialog_overlay = document.querySelector('.dialog-overlay');
-  const form = document.getElementById('verification-form');
-  const messageContainer = document.querySelector('.message-container');
-  const submitBtn = document.getElementById('submit-btn');
-  const closeBtn = document.querySelector('.close-btn');
-  const resendLink = document.getElementById('resend-link');
+  let codeVerificationForm ;
+  let messageContainer;
+  let closeBtn ;
+  let resendLink ;
+  //const inputs = form.querySelectorAll('input[required]');
+  let submitCodeBtn ;
+
 
   // --- Helpers ---
   function showMessage(message, type = 'success') {
@@ -106,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.setAttribute('type', 'button');
     btn.dataset.id = group.id;
     btn.innerHTML = '<i class="fas fa-copy"></i> Copy ID';
-    btn.addEventListener('click', async function() {
+    btn.addEventListener('click', async function () {
       const ok = await copyToClipboard(group.id);
       this.innerHTML = ok ? '<i class="fas fa-check"></i> Copied!' : '<i class="fas fa-times"></i> Failed';
       setTimeout(() => { this.innerHTML = '<i class="fas fa-copy"></i> Copy ID'; }, 2000);
@@ -241,9 +243,25 @@ document.addEventListener('DOMContentLoaded', function() {
           showMessage('Groups fetched successfully.', 'success');
         }
         else if (data.status === 'code_required') {
-            showMessage(data.message, 'success');
-            // Display code introduction dialog
-            dialog_overlay.style.display = "block";
+          showMessage(data.message, 'success');
+          // Display code introduction dialog
+          dialog_overlay.style.display = "block";
+
+          // Access elements DOM
+          codeVerificationForm = document.getElementById('verification-form');
+          messageContainer = document.querySelector('.message-container');
+          submitCodeBtn = document.getElementById('verifyCodeBtn');
+          closeBtn = document.querySelector('.close-btn');
+          resendLink = document.getElementById('resend-link');
+
+          // Send verification to the Flask App
+          sendVerificationCode();
+
+          // Event listener to the form submission
+          codeVerificationFormEvent()
+
+          // Launch event listeners
+          setupEvents()
 
         } else {
           showMessage(data.message || 'Failed to fetch groups.', 'error');
@@ -277,26 +295,33 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Verify code button (if exists)
-  if (verifyCodeBtn) {
-    verifyCodeBtn.addEventListener('click', async function () {
-      const code = document.getElementById('verification_code')?.value;
-      if (!code) {
-        showMessage('Please enter verification code', 'error');
-        return;
-      }
-
-      try {
-        const data = await safeFetch('/verify_code', { code: code });
-        if (data.status === 'success') {
-          showMessage(data.message, 'success');
-        } else {
-          showMessage(data.message || 'Verification failed.', 'error');
+  function sendVerificationCode() {
+    // Verify code button (if exists)
+    if (verifyCodeBtn) {
+      verifyCodeBtn.addEventListener('click', async function () {
+        const code = document.getElementById('full-code')?.value;
+        if (!code) {
+          showMessageVerificationCode('Please enter verification code', 'error');
+          return;
         }
-      } catch (e) {
-        showMessage('An error occurred: ' + e.message, 'error');
-      }
-    });
+
+        try {
+          const data = await safeFetch('/verify_code', { code: code });
+          if (data.status === 'success') {
+            showMessageVerificationCode(data.message, 'success');
+            // Hide code verification dialog
+            dialog_overlay.style.display = "none";
+            // Display groups
+            displayGroups(data.groups || []);
+            showMessageVerificationCode('Groups fetched successfully.', 'success');
+          } else {
+            showMessageVerificationCode(data.message || 'Verification failed.', 'error');
+          }
+        } catch (e) {
+          showMessageVerificationCode('An error occurred: ' + e.message, 'error');
+        }
+      });
+    }
   }
 
   // Verify password button (if exists)
@@ -304,20 +329,20 @@ document.addEventListener('DOMContentLoaded', function() {
     verifyPasswordBtn.addEventListener('click', async function () {
       const password = document.getElementById('two_factor_password')?.value;
       if (!password) {
-        showMessage('Please enter two-factor password', 'error');
+        showMessageVerificationCode('Please enter two-factor password', 'error');
         return;
       }
 
       try {
         const data = await safeFetch('/verify_2fa', { password: password });
         if (data.status === 'success') {
-          showMessage(data.message, 'success');
+          showMessageVerificationCode(data.message, 'success');
           if (passwordVerification) passwordVerification.style.display = 'none';
         } else {
-          showMessage(data.message || 'Two-factor authentication failed.', 'error');
+          showMessageVerificationCode(data.message || 'Two-factor authentication failed.', 'error');
         }
       } catch (e) {
-        showMessage('An error occurred: ' + e.message, 'error');
+        showMessageVerificationCode('An error occurred: ' + e.message, 'error');
       }
     });
   }
@@ -326,18 +351,16 @@ document.addEventListener('DOMContentLoaded', function() {
   function setupFormValidation() {
     const forms = document.querySelectorAll('form');
     forms.forEach(form => {
-      const inputs = form.querySelectorAll('input[required]');
-      const submitBtn = form.querySelector('button[type="button"]');
 
-      if (submitBtn) {
+      if (submitCodeBtn) {
         function validateForm() {
-          const allFilled = Array.from(inputs).every(input => input.value.trim() !== '');
-          submitBtn.disabled = !allFilled;
+          const allFilled = Array.from(codeInputs).every(input => input.value.trim() !== '');
+          submitCodeBtn.disabled = !allFilled;
         }
 
-        inputs.forEach(input => {
+        codeInputs.forEach(input => {
           input.addEventListener('input', validateForm);
-          input.addEventListener('blur', function() {
+          input.addEventListener('blur', function () {
             if (!this.value.trim()) {
               this.style.borderColor = 'var(--error)';
             } else {
@@ -396,7 +419,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Update existing buttons to use enhanced loading (optional)
   if (registerBtn) {
     const originalRegisterHandler = registerBtn.onclick;
-    registerBtn.onclick = async function() {
+    registerBtn.onclick = async function () {
       await safeFetchWithLoading('/save_config', {
         user_id: document.getElementById('user_id')?.value,
         api_id: document.getElementById('api_id')?.value,
@@ -413,92 +436,112 @@ document.addEventListener('DOMContentLoaded', function() {
     };
   }
 
-    // Focus management for code inputs
-    codeInputs.forEach((input, index) => {
-        input.addEventListener('input', function() {
-            if (this.value.length === 1) {
-                this.classList.add('filled');
-                if (index < codeInputs.length - 1) {
-                    codeInputs[index + 1].focus();
-                }
-            } else {
-                this.classList.remove('filled');
-            }
-            updateFullCode();
-        });
-
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Backspace' && this.value === '' && index > 0) {
-                codeInputs[index - 1].focus();
-            }
-        });
+  // Focus management for code inputs
+  codeInputs.forEach((input, index) => {
+    input.addEventListener('input', function () {
+      if (this.value.length === 1) {
+        this.classList.add('filled');
+        if (index < codeInputs.length - 1) {
+          codeInputs[index + 1].focus();
+        }
+      } else {
+        this.classList.remove('filled');
+      }
+      updateFullCode();
     });
 
-    // Update the hidden input with the full code
-    function updateFullCode() {
-        let code = '';
-        codeInputs.forEach(input => {
-            code += input.value;
-        });
-        fullCodeInput.value = code;
-
-        // Enable submit button only when all digits are entered
-        submitBtn.disabled = code.length !== 6;
-    }
-
-    // Form submission
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-
-        const code = fullCodeInput.value;
-
-        // Show loading state
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Verifying...';
-
-        // Simulate API call to Flask backend
-        setTimeout(() => {
-            // This is where you would make the actual API call
-            // For demonstration, we'll simulate different responses
-
-            // Simulate success for code "123456"
-            if (code === '123456') {
-                showMessage('Verification successful! Redirecting...', 'success');
-                // In a real app, you would redirect or perform other actions
-            } else {
-                showMessage('Invalid verification code. Please try again.', 'error');
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Verify Code';
-            }
-        }, 1500);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Backspace' && this.value === '' && index > 0) {
+        codeInputs[index - 1].focus();
+      }
     });
+  });
 
-    // Show message in the message container
-    function showMessage(message, type) {
-        messageContainer.textContent = message;
-        messageContainer.className = 'message-container ' + type;
+  // Update the hidden input with the full code
+  function updateFullCode() {
+    let code = '';
+    codeInputs.forEach(input => {
+      code += input.value;
+    });
+    fullCodeInput.value = code;
 
-        let icon = 'ℹ️';
-        if (type === 'error') icon = '❌';
-        if (type === 'success') icon = '✅';
+    // Enable submit button only when all digits are entered
+    submitCodeBtn.disabled = code.length !== 5;
+  }
 
-        messageContainer.innerHTML = `<span class="message-icon">${icon}</span> <span>${message}</span>`;
-    }
+  // Form submission
+  function codeVerificationFormEvent() {
+    codeVerificationForm.addEventListener('submit', function (e) {
+      e.preventDefault();
 
-    // Close button functionality
-    closeBtn.addEventListener('click', function() {
-        document.querySelector('.dialog-overlay').style.opacity = '0';
-        setTimeout(() => {
-            alert('Dialog closed. In a real application, this would close the overlay.');
-            document.querySelector('.dialog-overlay').style.opacity = '1';
-        }, 300);
+      const code = fullCodeInput.value;
+
+      // Show loading state
+      submitCodeBtn.disabled = true;
+      submitCodeBtn.textContent = 'Verifying...';
+
+      // Send to Flask backend for actual verification
+      fetch('/verify_code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCSRFToken() // If using CSRF protection
+        },
+        body: JSON.stringify({
+          telegram_code: code
+        })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showMessageVerificationCode('Verification successful!', 'success');
+            // Redirect based on server response
+            if (data.redirect_url) {
+              setTimeout(() => {
+                window.location.href = data.redirect_url;
+              }, 1500);
+            }
+          } else {
+            showMessageVerificationCode(data.error || 'Verification failed', 'error');
+            submitCodeBtn.disabled = false;
+            submitCodeBtn.textContent = 'Verify Code';
+          }
+        })
+        .catch(error => {
+          showMessageVerificationCode('Network error. Please try again.', 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Verify Code';
+        });
+    });
+  }
+  // Show message in the message container
+  function showMessageVerificationCode(message, type) {
+    messageContainer.textContent = message;
+    messageContainer.className = 'message-container ' + type;
+
+    let icon = 'ℹ️';
+    if (type === 'error') icon = '❌';
+    if (type === 'success') icon = '✅';
+
+    messageContainer.innerHTML = `<span class="message-icon">${icon}</span> <span>${message}</span>`;
+  }
+
+  // Close button functionality
+  function setupEvents() {
+    closeBtn.addEventListener('click', function () {
+      document.querySelector('.dialog-overlay').style.opacity = '0';
+      /*setTimeout(() => {
+        alert('Dialog closed. In a real application, this would close the overlay.');
+        document.querySelector('.dialog-overlay').style.opacity = '1';
+      }, 300);*/
     });
 
     // Resend code functionality
-    resendLink.addEventListener('click', function(e) {
-        e.preventDefault();
-        showMessage('New verification code sent to your Telegram.', 'info');
+    resendLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      showMessageVerificationCode('New verification code sent to your Telegram.', 'info');
 
-        // In a real app, you would make an API call to resend the code
+      // In a real app, you would make an API call to resend the code
     });
+  }
 });

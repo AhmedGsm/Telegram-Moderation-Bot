@@ -96,7 +96,9 @@ def get_groups():
 
         if not client.is_user_authorized():
             # Send code request
-            client.send_code_request(phone)
+            result = client.send_code_request(phone)
+            session['phone_code_hash'] = result.phone_code_hash
+
             session['client'] = client.session.save()
             return jsonify({
                 'status': 'code_required',
@@ -135,6 +137,10 @@ def verify_code():
         data = request.json
         code = data['code']
 
+        # Run the Telethon code in an event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
         # Recreate client from session
         client = TelegramClient(
             session=session['username'],
@@ -145,7 +151,7 @@ def verify_code():
         client.connect()
 
         # Sign in with the code
-        client.sign_in(phone=session['phone'], code=code)
+        client.sign_in(phone=session['phone'], code=code, phone_code_hash=session['phone_code_hash'])
 
         # Get all dialogs
         groups = []
