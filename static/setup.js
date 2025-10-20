@@ -237,8 +237,9 @@ document.addEventListener('DOMContentLoaded', function () {
       setFormEnabled(listForm, false);
 
       try {
-        const data = await safeFetch('/get_groups', formData);
+        const data = await safeFetch('/setup_session', formData);
         if (data.status === 'success') {
+          // Display Groups Container and hide subscription form
           displayGroups(data.groups || []);
           showMessage('Groups fetched successfully.', 'success');
         }
@@ -258,10 +259,10 @@ document.addEventListener('DOMContentLoaded', function () {
           sendVerificationCode();
 
           // Event listener to the form submission
-          codeVerificationFormEvent()
+          codeVerificationFormEvent();
 
           // Launch event listeners
-          setupEvents()
+          setupEvents();
 
         } else {
           showMessage(data.message || 'Failed to fetch groups.', 'error');
@@ -485,7 +486,7 @@ document.addEventListener('DOMContentLoaded', function () {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRFToken': getCSRFToken() // If using CSRF protection
+          //'X-CSRFToken': getCSRFToken() // If using CSRF protection
         },
         body: JSON.stringify({
           telegram_code: code
@@ -496,11 +497,12 @@ document.addEventListener('DOMContentLoaded', function () {
           if (data.success) {
             showMessageVerificationCode('Verification successful!', 'success');
             // Redirect based on server response
-            if (data.redirect_url) {
-              setTimeout(() => {
-                window.location.href = data.redirect_url;
-              }, 1500);
-            }
+            //showMessageVerificationCode(data.message, 'success');
+            // Hide code verification dialog
+            dialog_overlay.style.display = "none";
+            // Display groups
+            displayGroups(data.groups || []);
+            showMessageVerificationCode('Groups fetched successfully.', 'success');
           } else {
             showMessageVerificationCode(data.error || 'Verification failed', 'error');
             submitCodeBtn.disabled = false;

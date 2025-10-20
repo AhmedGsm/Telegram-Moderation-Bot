@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, jsonify, session
 import json
 import os
 from telethon.sync import TelegramClient
-from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError
+from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError, PhoneCodeInvalidError, PhoneCodeExpiredError
 import asyncio
 import secrets
 import subprocess
@@ -34,6 +34,34 @@ app.secret_key = get_or_create_secret_key()
 # Ensure the config directory exists
 os.makedirs('config', exist_ok=True)
 
+
+def clear_session(username):
+    # Delete previous session file if it exists
+    session_file = f"{username}.session"
+    if os.path.exists(session_file):
+        os.remove(session_file)
+        print(f"Deleted previous session file: {session_file}")
+    # Also delete any previous session-journal file
+    session_journal_file = f"{username}.session-journal"
+    if os.path.exists(session_journal_file):
+        os.remove(session_journal_file)
+        print(f"Deleted previous session journal file: {session_journal_file}")
+    # Clear any existing session data
+    session.clear()
+
+def fetch_groups(client):
+    # Get all dialogs
+    groups = []
+    dialogs = client.get_dialogs()
+    for dialog in dialogs:
+        if dialog.is_group or dialog.is_channel:
+            groups.append({
+                'name': dialog.name,
+                'id': dialog.id,
+                'type': 'Channel' if dialog.is_channel else 'Group'
+            })
+    #client.disconnect()
+    return groups
 
 @app.route('/')
 def index():
@@ -69,14 +97,18 @@ def save_config():
         return jsonify({'status': 'error', 'message': str(e)})
 
 
-@app.route('/get_groups', methods=['POST'])
-def get_groups():
+@app.route('/setup_session', methods=['POST'])
+def setup_session():
+    client = None
     try:
+
         data = request.json
+        # clear_session(data['username'])
+
         api_id = int(data['api_id'])
         api_hash = data['api_hash']
-        username = data['username']
         phone = data['phone']
+        username = data['username']
 
         # Store in session for potential code verification
         session['api_id'] = api_id
@@ -88,7 +120,6 @@ def get_groups():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        groups = []
         client = TelegramClient(username, api_id, api_hash)
         # Check if we need to sign in
         if not client.is_connected():
@@ -100,21 +131,17 @@ def get_groups():
             session['phone_code_hash'] = result.phone_code_hash
 
             session['client'] = client.session.save()
+
+            # PROPERLY DISCONNECT before returning
+            if client.is_connected():
+                client.disconnect()
+
             return jsonify({
                 'status': 'code_required',
                 'message': 'Verification code sent to your Telegram account. Please enter it below.'
             })
 
-        # Get all dialogs
-        dialogs = client.get_dialogs()
-        for dialog in dialogs:
-            if dialog.is_group or dialog.is_channel:
-                groups.append({
-                    'name': dialog.name,
-                    'id': dialog.id,
-                    'type': 'Channel' if dialog.is_channel else 'Group'
-                })
-
+        groups = fetch_groups(client)
         return jsonify({'status': 'success', 'groups': groups})
 
     except SessionPasswordNeededError:
@@ -122,17 +149,28 @@ def get_groups():
             'status': 'password_required',
             'message': 'Two-factor authentication is enabled. Please enter your password.'
         })
+
     except PhoneNumberInvalidError:
         return jsonify({
             'status': 'error',
             'message': 'The phone number is invalid. Please check it and try again.'
         })
+
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
+
+    finally:
+        # PROPERLY DISCONNECT before returning
+        if client.is_connected():
+            client.disconnect()
+
+
+
 
 
 @app.route('/verify_code', methods=['POST'])
 def verify_code():
+    client = None
     try:
         data = request.json
         code = data['code']
@@ -154,21 +192,29 @@ def verify_code():
         client.sign_in(phone=session['phone'], code=code, phone_code_hash=session['phone_code_hash'])
 
         # Get all dialogs
-        groups = []
-        dialogs = client.get_dialogs()
-        for dialog in dialogs:
-            if dialog.is_group or dialog.is_channel:
-                groups.append({
-                    'name': dialog.name,
-                    'id': dialog.id,
-                    'type': 'Channel' if dialog.is_channel else 'Group'
-                })
-
-        client.disconnect()
+        groups = fetch_groups(client)
         return jsonify({'status': 'success', 'groups': groups})
 
+    except PhoneCodeInvalidError:
+        return jsonify({'status': 'error', 'message': 'Invalid verification code. Please try again.'}), 400
+
+
+    except PhoneCodeExpiredError:
+        return jsonify({'status': 'error', 'message': 'Verification code has expired. Please request a new code.'}), 400
+
+
+    except SessionPasswordNeededError:
+
+        return jsonify(
+            {'status': 'error', 'message': 'Two-factor authentication is enabled. Please provide your password.'}), 400
+
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
+        return jsonify({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}), 500
+
+    finally:
+        # PROPERLY DISCONNECT before returning
+        if client and client.is_connected():
+            client.disconnect()
 
 
 @app.route('/verify_password', methods=['POST'])
