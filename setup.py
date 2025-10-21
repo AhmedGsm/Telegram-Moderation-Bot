@@ -103,7 +103,7 @@ def setup_session():
     try:
 
         data = request.json
-        # clear_session(data['username'])
+        #clear_session(data['username'])
 
         api_id = int(data['api_id'])
         api_hash = data['api_hash']

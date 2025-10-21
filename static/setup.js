@@ -259,10 +259,10 @@ document.addEventListener('DOMContentLoaded', function () {
           sendVerificationCode();
 
           // Event listener to the form submission
-          codeVerificationFormEvent();
+          //codeVerificationFormEvent();
 
           // Launch event listeners
-          setupEvents();
+          //setupEvents();
 
         } else {
           showMessage(data.message || 'Failed to fetch groups.', 'error');
@@ -299,7 +299,13 @@ document.addEventListener('DOMContentLoaded', function () {
   function sendVerificationCode() {
     // Verify code button (if exists)
     if (verifyCodeBtn) {
-      verifyCodeBtn.addEventListener('click', async function () {
+      verifyCodeBtn.addEventListener('click', async function (e) {
+        e.preventDefault()
+        
+        // Show loading state
+        submitCodeBtn.disabled = true;
+        submitCodeBtn.textContent = 'Verifying...';
+
         const code = document.getElementById('full-code')?.value;
         if (!code) {
           showMessageVerificationCode('Please enter verification code', 'error');
@@ -317,6 +323,10 @@ document.addEventListener('DOMContentLoaded', function () {
             showMessageVerificationCode('Groups fetched successfully.', 'success');
           } else {
             showMessageVerificationCode(data.message || 'Verification failed.', 'error');
+            
+            // Enable and reinstate submit button
+            submitCodeBtn.disabled = false;
+            submitCodeBtn.textContent = 'Verify Code';
           }
         } catch (e) {
           showMessageVerificationCode('An error occurred: ' + e.message, 'error');
@@ -532,7 +542,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function setupEvents() {
     closeBtn.addEventListener('click', function () {
       document.querySelector('.dialog-overlay').style.opacity = '0';
-      /*setTimeout(() => {
+     /*setTimeout(() => {
         alert('Dialog closed. In a real application, this would close the overlay.');
         document.querySelector('.dialog-overlay').style.opacity = '1';
       }, 300);*/
