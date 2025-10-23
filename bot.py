@@ -1,11 +1,9 @@
 import asyncio
 import json
 from telethon import TelegramClient, events
-from telethon.sessions import StringSession
-from telethon.tl.types import MessageMediaPhoto
 from constants import *
-import time
-import random
+from moderation import Moderator
+
 
 class User:
     def __init__(self, client, source_group, backup_group, admin_id):
@@ -175,4 +173,26 @@ if __name__ == "__main__":
         admin_id=ADMIN_SENDER_ID
     )
 
-    asyncio.run(manager.start())
+    # Moderation Group
+
+    moderator = Moderator(
+        api_id=API_ID,
+        api_hash=API_HASH,
+        bot_token=BOT_TOKEN,
+        source_group=SOURCE_GROUP_ID,
+        backup_group=BACKUP_GROUP_ID,
+        admin_id=ADMIN_SENDER_ID
+    )
+
+
+    async def run_all():
+        # Run both manager and main() concurrently
+        await asyncio.gather(
+            manager.start(),
+            moderator.moderate(),  # your aiogram or other async function
+        )
+
+
+    asyncio.run(run_all())
+
+
