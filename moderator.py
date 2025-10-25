@@ -1,11 +1,8 @@
 import asyncio
-import json
-from telethon import TelegramClient, events
 from constants import *
-from moderation import Moderator
 
 
-class User:
+class ContentModerator:
     def __init__(self, client, source_group, backup_group, admin_id):
         self.pending_albums = {}  # Track album groupings
         self.user_id = -1000
@@ -21,6 +18,8 @@ class User:
         self.require_image_and_text = False
         self.task = None
         self.timeout = 2
+        self.message_counter = 0
+        self.is_it_album = False
 
     async def process_message(self, event):
         print("def process_message")
@@ -108,91 +107,3 @@ class User:
             print("Message notification deleted!!")
         except Exception as e:
             print(f"Failed to delete notification: {e}")
-
-
-
-class TelegramPostManager:
-    def __init__(self, api_id, api_hash, bot_token, source_group, backup_group, admin_id):
-        self.client = TelegramClient("StringSession()", api_id, api_hash)
-        self.bot_token = bot_token
-        self.source_group = source_group
-        self.backup_group = backup_group
-        self.admin_id = admin_id
-        self.users_instances = {}
-        self.lock = asyncio.Lock()
-
-    async def start(self):
-        await self.client.start(bot_token=self.bot_token)
-        print("Bot started successfully")
-        self.client.add_event_handler(self.handle_new_message, events.NewMessage(chats=self.source_group))
-        await self.client.run_until_disconnected()
-
-    async def handle_new_message(self, event):
-        # Let the admin to post and forwar
-        with open("config/config.json") as f:
-            config = json.load(f)
-        admin_id = int(config["ADMIN_SENDER_ID"])
-
-        user_id = event.message.from_id.user_id
-        if user_id == admin_id:
-            return
-
-        # Get user details
-        sender = await event.get_sender()
-        user_id = sender.id
-
-        # Create User Instance
-        async with self.lock:
-            user_instance = self.users_instances.setdefault(
-                user_id,
-                User(self.client, self.source_group, self.backup_group, self.admin_id)
-            )
-
-        # Process album
-        await user_instance.process_message(event)
-
-if __name__ == "__main__":
-    # Configuration (use environment variables in production)
-    with open("config/config.json") as f:
-        config = json.load(f)
-
-    # Extract values
-    API_ID = config["TELEGRAM_API_ID"]
-    API_HASH = config["TELEGRAM_API_HASH"]
-    BOT_TOKEN = config["TELEGRAM_BOT_TOKEN"]
-    SOURCE_GROUP_ID = config["SOURCE_GROUP"]
-    BACKUP_GROUP_ID = config["BACKUP_GROUP"]
-    ADMIN_SENDER_ID = config["ADMIN_SENDER_ID"]
-
-    manager = TelegramPostManager(
-        api_id=API_ID,
-        api_hash=API_HASH,
-        bot_token=BOT_TOKEN,
-        source_group=SOURCE_GROUP_ID,
-        backup_group=BACKUP_GROUP_ID,
-        admin_id=ADMIN_SENDER_ID
-    )
-
-    # Moderation Group
-
-    moderator = Moderator(
-        api_id=API_ID,
-        api_hash=API_HASH,
-        bot_token=BOT_TOKEN,
-        source_group=SOURCE_GROUP_ID,
-        backup_group=BACKUP_GROUP_ID,
-        admin_id=ADMIN_SENDER_ID
-    )
-
-
-    async def run_all():
-        # Run both manager and main() concurrently
-        await asyncio.gather(
-            manager.start(),
-            moderator.moderate(),  # your aiogram or other async function
-        )
-
-
-    asyncio.run(run_all())
-
-

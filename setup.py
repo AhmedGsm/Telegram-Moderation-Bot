@@ -256,8 +256,8 @@ def verify_password():
 @app.route('/run_bot', methods=['POST'])
 def run_bot():
     try:
-        # Launch bot.py as a subprocess
-        subprocess.Popen(["python", "bot.py"])
+        # Launch moderator.py as a subprocess
+        subprocess.Popen(["python", "moderator.py"])
         return jsonify({'status': 'success', 'message': 'Bot is running and start moderation...'})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
