@@ -12,6 +12,7 @@ class TelegramPostManager:
         self.admin_id = admin_id
         self.users = {}
         self.lock = asyncio.Lock()
+        self.album_event = None
 
 
     async def handle_new_message_on_source_group(self, event):
@@ -68,9 +69,10 @@ class TelegramPostManager:
         user.message_counter = 0
         user.is_it_album = False
 
-    async def handle_new_album_on_backup_group(self, event):
+    async def handle_new_album_on_backup_group(self, event: events.Album.Event):
         print(f"handle_new_album_on_backup_group Event type: {type(event)}")
         print("album_handler Album is uploaded!")
+        self.album_event = event
         await self.show_notification_menu(event)
 
         user = self.users.setdefault(
@@ -89,19 +91,24 @@ class TelegramPostManager:
         )
         # Build chat and message ids
         try:
-            chat_id = event.message.chat_id
             message_id = event.message.id
             message_type = "message"
         except:
-            chat_id = event.chat_id
-            message_id = event.grouped_id
+            grouped_id = event.grouped_id
             message_type = "album"
+            user = self.users.setdefault(
+                event.sender_id,
+                ContentModerator(self.client, self.source_group, self.backup_group, self.admin_id)
+            )
+
+            user.albums[grouped_id] = [msg.id for msg in event.messages]
+            message_id = grouped_id
 
         # Build inline keyboard
         keyboard = [
             [
-                Button.inline("✅ Approve", f"approve:{message_id}:{chat_id}:{message_type}".encode()),
-                Button.inline("🚫 Reject", f"reject:{message_id}:{chat_id}:{message_type}".encode())
+                Button.inline("✅ Approve", f"approve:{message_id}:{message_type}".encode()),
+                Button.inline("🚫 Reject", f"reject:{message_id}:{message_type}".encode())
             ]
         ]
 
@@ -117,9 +124,10 @@ class TelegramPostManager:
     async def callback_handler(self, event):
         print(f"callback_handler Event type: {type(event)}")
         data = event.data.decode("utf-8")
-
+        # Album Event
+        album_event = self.album_event
         # Example: "approve:12345"
-        action, message_id, chat_id, message_type = data.split(":")
+        action, message_id, message_type = data.split(":")
 
         # "approve" button logic
         if action == "approve":
@@ -157,10 +165,21 @@ class TelegramPostManager:
 
         # Delete user message if it is rejected!
         # If it is an Album
+        chat_id = event.chat_id
+        user_id = event.sender_id
+        msg_id = int(message_id)
         if message_type == "message":
-            await event.client.delete_messages(int(chat_id), int(message_id))
+            await event.client.delete_messages(chat_id, msg_id)
         elif message_type == "album":
-            await event.client.delete_messages(int(chat_id), int(message_id))
+            user = self.users[event.sender_id]
+
+            # Delete images with a loop
+            for m_id in user.albums[msg_id]:
+                await event.client.delete_messages(chat_id, m_id)
+
+            # Delete album and its content from user
+            del user.albums[msg_id]
+
         await asyncio.sleep(2)
 
         # Delete message notification

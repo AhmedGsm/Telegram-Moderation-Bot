@@ -20,6 +20,7 @@ class ContentModerator:
         self.timeout = 2
         self.message_counter = 0
         self.is_it_album = False
+        self.albums = {}
 
     async def process_message(self, event):
         print("def process_message")
