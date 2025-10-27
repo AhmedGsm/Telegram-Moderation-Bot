@@ -1,4 +1,6 @@
 import asyncio
+from collections import defaultdict
+
 from constants import *
 
 
@@ -20,7 +22,7 @@ class ContentModerator:
         self.timeout = 2
         self.message_counter = 0
         self.is_it_album = False
-        self.albums = {}
+        self.albums = defaultdict(list)
 
     async def process_message(self, event):
         print("def process_message")
