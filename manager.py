@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import json
 from collections import defaultdict
 
@@ -7,7 +8,10 @@ from moderator import ContentModerator
 
 class TelegramPostManager:
     def __init__(self, api_id, api_hash, bot_token, source_group, backup_group, admin_id):
-        self.client = TelegramClient(str(admin_id), api_id, api_hash)
+        self.session_name = hashlib.md5(str(admin_id).encode()).hexdigest()
+        self.client = TelegramClient("_".join(["bot", self.session_name]), api_id, api_hash)
+        self.api_id = api_id
+        self.api_hash = api_hash
         self.bot_token = bot_token
         self.source_group = source_group
         self.backup_group = backup_group
@@ -17,13 +21,18 @@ class TelegramPostManager:
         self.album_event = None
 
     async def fetch_users_from_group(self, group_id, limit):
-        # Start the client
-        #await self.client.start()
+        # Start the client to fetch group messages
+        # Generate a unique session name by hashing the admin_id
+
+
+        client = TelegramClient("_".join(["user", self.session_name]),
+                                              self.api_id, self.api_hash)
+        await client.start()
         # Replace 'group_name' with your group's name or ID
-        group = await self.client.get_entity(group_id)
+        group = await client.get_entity(group_id)
 
         # Fetch the last 100 messages from the group (adjust limit as needed)
-        messages = await self.client.get_messages(group, limit=limit)
+        messages = await client.get_messages(group, limit=limit)
 
         # Loop through the messages and filter media messages
         for msg in messages:
@@ -40,6 +49,8 @@ class TelegramPostManager:
                         ContentModerator(self.client, self.source_group, self.backup_group, self.admin_id)
                     )
                     user.albums[grouped_id].append(msg.id)
+
+        await client.disconnect()
 
 
     async def handle_new_message_on_source_group(self, event):
@@ -213,10 +224,10 @@ class TelegramPostManager:
         await event.delete()
 
     async def start(self):
-        await self.client.start()
-        print("Bot started successfully")
 
         await self.fetch_users_from_group(self.backup_group, 1000)
+        await self.client.start(bot_token=self.bot_token)
+        print("Bot started successfully")
 
         # Register handlers
         self.client.add_event_handler(self.handle_new_message_on_source_group,

@@ -1,3 +1,4 @@
+(function() {
 document.addEventListener('DOMContentLoaded', function () {
 
   // === ORIGINAL FUNCTIONALITY (Preserved) ===
@@ -22,6 +23,20 @@ document.addEventListener('DOMContentLoaded', function () {
   let resendLink ;
   //const inputs = form.querySelectorAll('input[required]');
   let submitCodeBtn ;
+
+function getFormData() {
+    return {
+        admin_id: document.getElementById('admin_id')?.value,
+        api_id: document.getElementById('api_id')?.value,
+        api_hash: document.getElementById('api_hash')?.value,
+        bot_token: document.getElementById('bot_token')?.value,
+        source_group: document.getElementById('source_group')?.value,
+        backup_group: document.getElementById('backup_group')?.value,
+        phone: document.getElementById('phone')?.value
+
+    };
+}
+
 
 
   // --- Helpers ---
@@ -174,16 +189,9 @@ document.addEventListener('DOMContentLoaded', function () {
   // Register config
   if (registerBtn) {
     registerBtn.addEventListener('click', async function () {
-      const formData = {
-        user_id: document.getElementById('user_id')?.value,
-        api_id: document.getElementById('api_id')?.value,
-        api_hash: document.getElementById('api_hash')?.value,
-        bot_token: document.getElementById('bot_token')?.value,
-        source_group: document.getElementById('source_group')?.value,
-        backup_group: document.getElementById('backup_group')?.value
-      };
 
       // Validate before disabling anything
+      const formData = getFormData()
       for (const k in formData) {
         if (!formData[k]) {
           showMessage('Please fill all required fields', 'error');
@@ -214,16 +222,14 @@ document.addEventListener('DOMContentLoaded', function () {
   // List groups
   if (listGroupsBtn) {
     listGroupsBtn.addEventListener('click', async function () {
-      const formData = {
-        user_id: document.getElementById('user_id')?.value,
-        api_id: document.getElementById('api_id')?.value,
-        api_hash: document.getElementById('api_hash')?.value,
-        username: document.getElementById('username')?.value,
-        phone: document.getElementById('phone')?.value
-      };
 
       // Validate before changing UI state
-      for (const k in formData) {
+      const formData = getFormData();
+      const firstFormData = formData;
+      delete firstFormData.source_group;
+      delete firstFormData.backup_group;
+      
+      for (const k in firstFormData) {
         if (!formData[k]) {
           showMessage('Please fill all above required fields', 'error');
           return;
@@ -431,14 +437,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (registerBtn) {
     const originalRegisterHandler = registerBtn.onclick;
     registerBtn.onclick = async function () {
-      await safeFetchWithLoading('/save_config', {
-        user_id: document.getElementById('user_id')?.value,
-        api_id: document.getElementById('api_id')?.value,
-        api_hash: document.getElementById('api_hash')?.value,
-        bot_token: document.getElementById('bot_token')?.value,
-        source_group: document.getElementById('source_group')?.value,
-        backup_group: document.getElementById('backup_group')?.value
-      }, registerBtn);
+      await safeFetchWithLoading('/save_config', formData, registerBtn);
 
       // Call original handler logic
       if (typeof originalRegisterHandler === 'function') {
@@ -557,3 +556,4 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 });
+})()

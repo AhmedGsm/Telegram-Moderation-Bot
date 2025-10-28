@@ -81,12 +81,13 @@ def save_config():
     try:
         data = request.json
         config = {
-            "ADMIN_SENDER_ID": int(data['user_id']),
+            "ADMIN_SENDER_ID": int(data['admin_id']),
             "TELEGRAM_API_ID": int(data['api_id']),
             "TELEGRAM_API_HASH": data['api_hash'],
             "TELEGRAM_BOT_TOKEN": data['bot_token'],
             "SOURCE_GROUP": int(data['source_group']),
-            "BACKUP_GROUP": int(data['backup_group'])
+            "BACKUP_GROUP": int(data['backup_group']),
+            "PHONE": int(data['phone'])
         }
 
         with open('config/config.json', 'w') as f:
@@ -105,22 +106,22 @@ def setup_session():
         data = request.json
         #clear_session(data['username'])
 
+        admin_id = int(data['admin_id'])
         api_id = int(data['api_id'])
         api_hash = data['api_hash']
         phone = data['phone']
-        username = data['username']
 
         # Store in session for potential code verification
+        session['admin_id'] = str(admin_id)
         session['api_id'] = api_id
         session['api_hash'] = api_hash
-        session['username'] = username
         session['phone'] = phone
 
         # Run the Telethon code in an event loop
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-        client = TelegramClient(username, api_id, api_hash)
+        client = TelegramClient(session['admin_id'] , api_id, api_hash)
         # Check if we need to sign in
         if not client.is_connected():
             client.connect()
@@ -161,7 +162,7 @@ def setup_session():
 
     finally:
         # PROPERLY DISCONNECT before returning
-        if client.is_connected():
+        if client and client.is_connected():
             client.disconnect()
 
 
@@ -181,7 +182,7 @@ def verify_code():
 
         # Recreate client from session
         client = TelegramClient(
-            session=session['username'],
+            session=session['admin_id'],
             api_id=session['api_id'],
             api_hash=session['api_hash']
         )
@@ -225,7 +226,7 @@ def verify_password():
 
         # Recreate client from session
         client = TelegramClient(
-            session=session['username'],
+            session=session['admin_id'],
             api_id=session['api_id'],
             api_hash=session['api_hash']
         )
