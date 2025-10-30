@@ -10,6 +10,10 @@ class TelegramPostManager:
     def __init__(self, api_id, api_hash, bot_token, source_group, backup_group, admin_id):
         self.session_name = hashlib.md5(str(admin_id).encode()).hexdigest()
         self.client = TelegramClient("_".join(["bot", self.session_name]), api_id, api_hash)
+        with open("config/config.json") as f:
+            self.config = json.load(f)
+        bot_token = self.config["TELEGRAM_BOT_TOKEN"]
+        self.bot_id = int(bot_token.split(":")[0])
         self.api_id = api_id
         self.api_hash = api_hash
         self.bot_token = bot_token
@@ -19,6 +23,7 @@ class TelegramPostManager:
         self.users = defaultdict(lambda: ContentModerator(self.client, self.source_group, self.backup_group, self.admin_id))
         self.lock = asyncio.Lock()
         self.album_event = None
+
 
     async def fetch_users_from_group(self, group_id, limit):
         # Start the client to fetch group messages
@@ -55,10 +60,9 @@ class TelegramPostManager:
 
     async def handle_new_message_on_source_group(self, event):
         print(f"handle_new_message_on_source_group Event type: {type(event)}")
-        # Let the admin to post and forwar
-        with open("config/config.json") as f:
-            config = json.load(f)
-        admin_id = int(config["ADMIN_SENDER_ID"])
+
+        # Let the admin to post and forward
+        admin_id = int(self.config["ADMIN_SENDER_ID"])
 
         user_id = event.message.from_id.user_id
         if user_id == admin_id:
@@ -82,6 +86,12 @@ class TelegramPostManager:
         print(f"handle_new_message_on_backup_group Event type: {type(event)}")
         print("start_handler")
         print("event message ID " + str(event.message.id))
+
+        # Check if the message is forwarded from the bot
+        # Filter normal posting from simple users
+        #if event.message.from_id != self.bot_id:
+        #    await event.delete()
+        #    return
 
         # Check if it is an album if the counter is 2
         # Cancel Processing let the album event work !
@@ -166,6 +176,9 @@ class TelegramPostManager:
         album_event = self.album_event
         # Example: "approve:12345"
         action, message_id, message_type = data.split(":")
+        chat_id = event.chat_id
+        user_id = event.sender_id
+        msg_id = int(message_id)
 
         # "approve" button logic
         if action == "approve":
@@ -180,9 +193,16 @@ class TelegramPostManager:
             await event.answer("Approved ✔", alert=True)
 
             # Resend the post to the original Group
+            if message_type == "message":
+                messages_ids = [msg_id]
+            elif message_type == "album":
+                group_id = msg_id
+                messages_ids = self.users[user_id].albums[group_id]
+
+            # Forward the Album
             await event.client.forward_messages(
                 entity=self.source_group,
-                messages=[int(message_id)],
+                messages=messages_ids,
                 from_peer=self.backup_group
             )
 
@@ -203,9 +223,6 @@ class TelegramPostManager:
 
         # Delete user message if it is rejected!
         # If it is an Album
-        chat_id = event.chat_id
-        user_id = event.sender_id
-        msg_id = int(message_id)
         if message_type == "message":
             await event.client.delete_messages(chat_id, msg_id)
         elif message_type == "album":
