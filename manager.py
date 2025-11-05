@@ -10,6 +10,7 @@ class TelegramPostManager:
     def __init__(self, api_id, api_hash, bot_token, source_group, backup_group, admin_id):
         self.session_name = hashlib.md5(str(admin_id).encode()).hexdigest()
         self.client = TelegramClient("_".join(["bot", self.session_name]), api_id, api_hash)
+        self.user_client = None
         with open("config/config.json") as f:
             self.config = json.load(f)
         bot_token = self.config["TELEGRAM_BOT_TOKEN"]
@@ -30,14 +31,14 @@ class TelegramPostManager:
         # Generate a unique session name by hashing the admin_id
 
 
-        client = TelegramClient("_".join(["user", self.session_name]),
+        self.user_client = TelegramClient("_".join(["user", self.session_name]),
                                               self.api_id, self.api_hash)
-        await client.start()
+        await self.user_client.start()
         # Replace 'group_name' with your group's name or ID
-        group = await client.get_entity(group_id)
+        group = await self.user_client.get_entity(group_id)
 
         # Fetch the last 100 messages from the group (adjust limit as needed)
-        messages = await client.get_messages(group, limit=limit)
+        messages = await self.user_client.get_messages(group, limit=limit)
 
         # Loop through the messages and filter media messages
         for msg in messages:
@@ -55,7 +56,6 @@ class TelegramPostManager:
                     )
                     user.albums[grouped_id].append(msg.id)
 
-        await client.disconnect()
 
 
     async def handle_new_message_on_source_group(self, event):
@@ -97,7 +97,7 @@ class TelegramPostManager:
         # Cancel Processing let the album event work !
         user = self.users.setdefault(
             event.message.from_id.user_id,
-            ContentModerator(self.client, self.source_group, self.backup_group, self.admin_id)
+            ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
         )
 
         user.message_counter += 1
@@ -146,7 +146,7 @@ class TelegramPostManager:
             message_type = "album"
             user = self.users.setdefault(
                 event.sender_id,
-                ContentModerator(self.client, self.source_group, self.backup_group, self.admin_id)
+                ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
             )
 
             user.albums[grouped_id] = [msg.id for msg in event.messages]
@@ -162,10 +162,19 @@ class TelegramPostManager:
 
 
         # Display notification
-        await event.respond(
+
+        """await event.respond(
             text,
             buttons=keyboard,
             parse_mode="html"
+        )"""
+
+        # Send the notification with buttons
+        await self.client.send_message(
+            self.backup_group,  # Can be chat ID, username, or entity
+            text,
+            buttons=keyboard,  # Inline buttons
+            parse_mode="html"  # Use HTML formatting
         )
 
     @events.register(events.CallbackQuery)
@@ -242,19 +251,20 @@ class TelegramPostManager:
 
     async def start(self):
 
-        await self.fetch_users_from_group(self.backup_group, 1000)
         await self.client.start(bot_token=self.bot_token)
+        await self.fetch_users_from_group(self.backup_group, 1000)
         print("Bot started successfully")
 
         # Register handlers
-        self.client.add_event_handler(self.handle_new_message_on_source_group,
+        self.user_client.add_event_handler(self.handle_new_message_on_source_group,
                                       events.NewMessage(chats=self.source_group))
-        self.client.add_event_handler(self.handle_new_message_on_backup_group,
+        self.user_client.add_event_handler(self.handle_new_message_on_backup_group,
                                       events.NewMessage(chats=self.backup_group))
-        self.client.add_event_handler(self.handle_new_album_on_backup_group, events.Album(chats=self.backup_group))
-        self.client.add_event_handler(self.callback_handler)
+        self.user_client.add_event_handler(self.handle_new_album_on_backup_group, events.Album(chats=self.backup_group))
+        self.user_client.add_event_handler(self.callback_handler)
 
         # Run non continuously
+        await self.user_client.run_until_disconnected()
         await self.client.run_until_disconnected()
 
 
