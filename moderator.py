@@ -32,8 +32,30 @@ class ContentModerator:
                 return
 
             # Handle media albums
-            if self.user_id != self.admin_id:
-                await self.process_album(event)
+            # Forward only non admin messages
+
+            # Retrieve user ID
+            user_id = event.message.sender.id
+
+            # Get the list of participants in the chat
+            participants = await self.client.get_participants(self.source_group)
+
+            # Check if the user is an admin
+            for p in participants:
+                if user_id != p.id:
+                    continue
+                try:
+                    p.participant.admin_rights
+                    return
+                except:
+                    print(str(p.id) + " IS NOT AN ADMIN")
+                    break
+
+
+            #is_admin = any(p.id == user_id and p.is_admin for p in participants)
+            # If the poster is an admin then don't forward album to backup moderation group
+
+            await self.process_album(event)
 
         except Exception as e:
             print(f"Error processing message: {e}")
@@ -66,7 +88,7 @@ class ContentModerator:
     async def send_album(self, event):
         print("def send_album")
         # Wait to allow processing next images to be added to album
-        await asyncio.sleep(3)
+        await asyncio.sleep(0)
 
         for album in self.album_dict.values():
             album.sort(key=lambda msg: msg.id)
