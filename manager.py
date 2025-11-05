@@ -59,7 +59,7 @@ class TelegramPostManager:
 
 
     async def handle_new_message_on_source_group(self, event):
-        print(f"handle_new_message_on_source_group Event type: {type(event)}")
+        #print(f"handle_new_message_on_source_group Event type: {type(event)}")
 
         # Let the admin to post and forward
         admin_id = int(self.config["ADMIN_SENDER_ID"])
@@ -83,9 +83,9 @@ class TelegramPostManager:
         await user.process_message(event)
 
     async def handle_new_message_on_backup_group(self, event):
-        print(f"handle_new_message_on_backup_group Event type: {type(event)}")
-        print("start_handler")
-        print("event message ID " + str(event.message.id))
+        #print(f"handle_new_message_on_backup_group Event type: {type(event)}")
+        #print("start_handler")
+        #print("event message ID " + str(event.message.id))
 
         # Check if the message is forwarded from the bot
         # Filter normal posting from simple users
@@ -118,7 +118,7 @@ class TelegramPostManager:
         user.is_it_album = False
 
     async def handle_new_album_on_backup_group(self, event: events.Album.Event):
-        print(f"handle_new_album_on_backup_group Event type: {type(event)}")
+        #print(f"handle_new_album_on_backup_group Event type: {type(event)}")
         print("album_handler Album is uploaded!")
         self.album_event = event
         await self.show_notification_menu(event)
@@ -146,7 +146,7 @@ class TelegramPostManager:
             message_type = "album"
             user = self.users.setdefault(
                 event.sender_id,
-                ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
+                ContentModerator(self.client, self.source_group, self.backup_group, self.admin_id)
             )
 
             user.albums[grouped_id] = [msg.id for msg in event.messages]
@@ -162,7 +162,6 @@ class TelegramPostManager:
 
 
         # Display notification
-
         """await event.respond(
             text,
             buttons=keyboard,
@@ -179,7 +178,7 @@ class TelegramPostManager:
 
     @events.register(events.CallbackQuery)
     async def callback_handler(self, event):
-        print(f"callback_handler Event type: {type(event)}")
+        #print(f"callback_handler Event type: {type(event)}")
         data = event.data.decode("utf-8")
         # Album Event
         album_event = self.album_event
@@ -259,9 +258,9 @@ class TelegramPostManager:
         self.user_client.add_event_handler(self.handle_new_message_on_source_group,
                                       events.NewMessage(chats=self.source_group))
         self.user_client.add_event_handler(self.handle_new_message_on_backup_group,
-                                      events.NewMessage(chats=self.backup_group))
+                                      events.NewMessage(chats=self.backup_group, forwards=True))
         self.user_client.add_event_handler(self.handle_new_album_on_backup_group, events.Album(chats=self.backup_group))
-        self.user_client.add_event_handler(self.callback_handler)
+        self.client.add_event_handler(self.callback_handler)
 
         # Run non continuously
         await self.user_client.run_until_disconnected()

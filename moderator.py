@@ -48,7 +48,7 @@ class ContentModerator:
                     p.participant.admin_rights
                     return
                 except:
-                    print(str(p.id) + " IS NOT AN ADMIN")
+                    #print(str(p.id) + " IS NOT AN ADMIN")
                     break
 
 
@@ -88,7 +88,7 @@ class ContentModerator:
     async def send_album(self, event):
         print("def send_album")
         # Wait to allow processing next images to be added to album
-        await asyncio.sleep(0)
+        await asyncio.sleep(2)
 
         for album in self.album_dict.values():
             album.sort(key=lambda msg: msg.id)
