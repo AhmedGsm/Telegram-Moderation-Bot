@@ -24,6 +24,7 @@ class TelegramPostManager:
         self.users = defaultdict(lambda: ContentModerator(self.client, self.source_group, self.backup_group, self.admin_id))
         self.lock = asyncio.Lock()
         self.album_event = None
+        self.user_event = None
 
 
     async def fetch_users_from_group(self, group_id, limit):
@@ -46,90 +47,39 @@ class TelegramPostManager:
             if msg.media:
                 grouped_id = msg.grouped_id  # This is the unique ID for albums
                 sender_id = msg.sender_id
+                forwarder_id = msg.forward.sender_id
 
                 # If the message has a grouped_id, it's part of an album
                 if grouped_id:
                     # Append the message ID to the list of the corresponding album
                     user = self.users.setdefault(
-                        sender_id,
+                        forwarder_id,
                         ContentModerator(self.client, self.source_group, self.backup_group, self.admin_id)
                     )
                     user.albums[grouped_id].append(msg.id)
 
-
-
     async def handle_new_message_on_source_group(self, event):
-        #print(f"handle_new_message_on_source_group Event type: {type(event)}")
-
-        # Let the admin to post and forward
-        admin_id = int(self.config["ADMIN_SENDER_ID"])
-
-        user_id = event.message.from_id.user_id
-        if user_id == admin_id:
-            return
-
-        # Get user details
-        sender = await event.get_sender()
-        user_id = sender.id
-
-        # Create User Instance
-        async with self.lock:
-            user = self.users.setdefault(
-                user_id,
-                ContentModerator(self.client, self.source_group, self.backup_group, self.admin_id)
-            )
-
-        # Process album
-        await user.process_message(event)
+        print(f"handle_new_message_on_source_group Event type: {type(event)}")
 
     async def handle_new_message_on_backup_group(self, event):
-        #print(f"handle_new_message_on_backup_group Event type: {type(event)}")
-        #print("start_handler")
-        #print("event message ID " + str(event.message.id))
+        print(f"handle_new_message_on_backup_group Event type: {type(event)}")
 
-        # Check if the message is forwarded from the bot
-        # Filter normal posting from simple users
-        #if event.message.from_id != self.bot_id:
-        #    await event.delete()
-        #    return
-
-        # Check if it is an album if the counter is 2
-        # Cancel Processing let the album event work !
-        user = self.users.setdefault(
-            event.message.from_id.user_id,
-            ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
-        )
-
-        user.message_counter += 1
-        if user.message_counter == 2:
-            user.is_it_album = True
-            return
-
-        # Wait other message
-        await asyncio.sleep(0)
-        if user.is_it_album:
-            #self.message_counter = 0
-            #self.is_it_album = False
-            return
-
-        # Build message text
-        await self.show_notification_menu(event)
-        user.message_counter = 0
-        user.is_it_album = False
-
-    async def handle_new_album_on_backup_group(self, event: events.Album.Event):
-        #print(f"handle_new_album_on_backup_group Event type: {type(event)}")
-        print("album_handler Album is uploaded!")
-        self.album_event = event
-        await self.show_notification_menu(event)
+    async def handle_new_album_on_source_group(self, event):
+        print("album_handler Album source_group")
 
         user = self.users.setdefault(
             event.sender_id,
-            ContentModerator(self.client, self.source_group, self.backup_group, self.admin_id)
+            ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
         )
+        await user.process_message(event)
+        print("Bottom of the handle_new_album_on_source_group function!!!")
 
-        user.message_counter = 0
-        user.is_it_album = False
+    async def handle_new_album_on_backup_group(self, event: events.Album.Event):
+        #print(f"handle_new_album_on_backup_group Event type: {type(event)}")
+        print("album_handler Album  Backup Group!")
+        await self.show_notification_menu(event)
+        print("Bottom of the handle_new_album_on_backup_group function !!")
+
 
     async def show_notification_menu(self, event):
         text = (
@@ -145,7 +95,7 @@ class TelegramPostManager:
             grouped_id = event.grouped_id
             message_type = "album"
             user = self.users.setdefault(
-                event.sender_id,
+                event.forward.sender_id,
                 ContentModerator(self.client, self.source_group, self.backup_group, self.admin_id)
             )
 
@@ -257,9 +207,12 @@ class TelegramPostManager:
         # Register handlers
         self.user_client.add_event_handler(self.handle_new_message_on_source_group,
                                       events.NewMessage(chats=self.source_group))
+        self.user_client.add_event_handler(self.handle_new_album_on_source_group,
+                                           events.Album(chats=self.source_group))
         self.user_client.add_event_handler(self.handle_new_message_on_backup_group,
                                       events.NewMessage(chats=self.backup_group, forwards=True))
-        self.user_client.add_event_handler(self.handle_new_album_on_backup_group, events.Album(chats=self.backup_group))
+        self.user_client.add_event_handler(self.handle_new_album_on_backup_group,
+                                           events.Album(chats=self.backup_group))
         self.client.add_event_handler(self.callback_handler)
 
         # Run non continuously

@@ -1,6 +1,6 @@
 import asyncio
 from collections import defaultdict
-
+from telethon.tl.types import Message
 from constants import *
 
 
@@ -26,16 +26,27 @@ class ContentModerator:
 
     async def process_message(self, event):
         print("def process_message")
+        # Check if the event is a single message or part of an album
+        event_message = None
         try:
+            try:
+                # If it is single message
+                if event.message:
+                    event_message = event.message
+                    messages = [event_message]
+            except:
+                # If it is an album
+                messages = event.messages
+                event_message = messages[0]
             # Ignore service messages and bot commands
-            if not event.message.message and not event.message.media:
+            if not event_message.message and not event_message.media:
                 return
 
             # Handle media albums
             # Forward only non admin messages
 
             # Retrieve user ID
-            user_id = event.message.sender.id
+            user_id = event_message.sender.id
 
             # Get the list of participants in the chat
             participants = await self.client.get_participants(self.source_group)
@@ -45,7 +56,8 @@ class ContentModerator:
                 if user_id != p.id:
                     continue
                 try:
-                    p.participant.admin_rights
+                    if p.participant.admin_rights:
+                        pass
                     return
                 except:
                     #print(str(p.id) + " IS NOT AN ADMIN")
@@ -55,62 +67,23 @@ class ContentModerator:
             #is_admin = any(p.id == user_id and p.is_admin for p in participants)
             # If the poster is an admin then don't forward album to backup moderation group
 
-            await self.process_album(event)
+            await self.client.forward_messages(
+                entity=self.backup_group,
+                messages=[msg.id for msg in messages],
+                from_peer=self.source_group
+            )
+
+            print("Album forwarded (self.client.forward_messages)")
+            await self.delete_post_and_notify(event)
 
         except Exception as e:
             print(f"Error processing message: {e}")
 
-    async def process_album(self, event):
-        """Handle media albums by grouping them"""
-        print("def process_album")
-        # Group Id of a message
-        message_group_id = event.message.grouped_id
-
-        # Check if text is uploaded
-        if event.message.message:
-            self.is_text_uploaded = True
-
-        # Check if image or media is uploaded
-        if event.message.media:
-            self.is_media_uploaded = True
-
-        if not message_group_id:# Text message
-            self.album_dict["single"].append(event.message)
-        else:
-            self.album_dict.setdefault(message_group_id, []).append(event.message)
-
-        # Forward album to backup
-        if not self.is_album_processed:
-            self.is_album_processed = True
-            # Send Album
-            await self.send_album(event)
-
-    async def send_album(self, event):
-        print("def send_album")
-        # Wait to allow processing next images to be added to album
-        await asyncio.sleep(2)
-
-        for album in self.album_dict.values():
-            album.sort(key=lambda msg: msg.id)
-            if album:
-                await self.client.forward_messages(
-                    entity=self.backup_group,
-                    messages=[msg.id for msg in album],
-                    from_peer=self.source_group
-                )
-
-                print("Album forwarded (self.client.forward_messages)")
-        await self.delete_post_and_notify(event)
-
-        self.album_dict = {"single": [],
-                           }
-        self.is_album_processed = False
 
     async def delete_post_and_notify(self, event):
         # Delete all album parts
-        for album in self.album_dict.values():
-            if album:
-                await self.client.delete_messages(self.source_group, [msg.id for msg in album])
+        await event.delete()
+        #await self.client.delete_messages(self.source_group, [msg.id for msg in album])
         # Send notification
         await self.notify_user(event, self.notification_message)
 
