@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import json
+import time
 from collections import defaultdict
 
 from telethon import TelegramClient, events, Button
@@ -25,6 +26,10 @@ class TelegramPostManager:
         self.lock = asyncio.Lock()
         self.album_event = None
         self.user_event = None
+        self.previous_time = time.time()
+        self.time_2_message = 0.1
+        self.is_album = False
+        self.start_time = -1
 
 
     async def fetch_users_from_group(self, group_id, limit):
@@ -60,11 +65,46 @@ class TelegramPostManager:
 
     async def handle_new_message_on_source_group(self, event):
         print(f"handle_new_message_on_source_group Event type: {type(event)}")
+        message_timeout = 5
+        if self.is_album:
+            return
+
+        if self.start_time < 0:
+            self.start_time = time.time()
+
+        while not self.is_album:
+            now = time.time()
+            diff = now - self.start_time
+            if diff > message_timeout:
+                print("Waiting Album...")
+                break
+            await asyncio.sleep(0.1)
+
+        if self.is_album:
+            return
+
+        """actual_time = time.time()
+        time_between_messages = actual_time - self.previous_time
+        if time_between_messages <= self.time_2_message:
+            return
+        print("Time elapsed: " + str(time_between_messages))
+        self.previous_time = actual_time"""
+
+
+
+        user = self.users.setdefault(
+            event.sender_id,
+            ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
+        )
+        await user.process_message(event)
+        self.is_album = False
+        self.start_time = -1
 
     async def handle_new_message_on_backup_group(self, event):
         print(f"handle_new_message_on_backup_group Event type: {type(event)}")
 
     async def handle_new_album_on_source_group(self, event):
+        self.is_album = True
         print("album_handler Album source_group")
 
         user = self.users.setdefault(
@@ -72,6 +112,8 @@ class TelegramPostManager:
             ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
         )
         await user.process_message(event)
+        self.is_album = False
+        self.start_time = -1
         print("Bottom of the handle_new_album_on_source_group function!!!")
 
     async def handle_new_album_on_backup_group(self, event: events.Album.Event):
@@ -205,12 +247,12 @@ class TelegramPostManager:
         print("Bot started successfully")
 
         # Register handlers
-        self.user_client.add_event_handler(self.handle_new_message_on_source_group,
-                                      events.NewMessage(chats=self.source_group))
         self.user_client.add_event_handler(self.handle_new_album_on_source_group,
                                            events.Album(chats=self.source_group))
+        self.user_client.add_event_handler(self.handle_new_message_on_source_group,
+                                      events.NewMessage(chats=self.source_group))
         self.user_client.add_event_handler(self.handle_new_message_on_backup_group,
-                                      events.NewMessage(chats=self.backup_group, forwards=True))
+                                      events.NewMessage(chats=self.backup_group)) #, forwards=True
         self.user_client.add_event_handler(self.handle_new_album_on_backup_group,
                                            events.Album(chats=self.backup_group))
         self.client.add_event_handler(self.callback_handler)
