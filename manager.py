@@ -5,6 +5,8 @@ import time
 from collections import defaultdict
 
 from telethon import TelegramClient, events, Button
+
+from constants import SINGLE_MESSAGE_DETECTION_TIMEOUT
 from moderator import ContentModerator
 
 class TelegramPostManager:
@@ -28,8 +30,6 @@ class TelegramPostManager:
         self.user_event = None
         self.previous_time = time.time()
         self.time_2_message = 0.1
-        self.is_album = False
-        self.start_time = -1
 
 
     async def fetch_users_from_group(self, group_id, limit):
@@ -65,22 +65,26 @@ class TelegramPostManager:
 
     async def handle_new_message_on_source_group(self, event):
         print(f"handle_new_message_on_source_group Event type: {type(event)}")
-        message_timeout = 5
-        if self.is_album:
+        user = self.users.setdefault(
+            event.sender_id,
+            ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
+        )
+
+        if user.is_album_on_source:
             return
 
-        if self.start_time < 0:
-            self.start_time = time.time()
+        if user.start_time_on_source < 0:
+            user.start_time_on_source = time.time()
 
-        while not self.is_album:
+        while not user.is_album_on_source:
             now = time.time()
-            diff = now - self.start_time
-            if diff > message_timeout:
+            diff = now - user.start_time_on_source
+            if diff > SINGLE_MESSAGE_DETECTION_TIMEOUT:
                 print("Waiting Album...")
                 break
             await asyncio.sleep(0.1)
 
-        if self.is_album:
+        if user.is_album_on_source:
             return
 
         """actual_time = time.time()
@@ -91,29 +95,25 @@ class TelegramPostManager:
         self.previous_time = actual_time"""
 
 
-
-        user = self.users.setdefault(
-            event.sender_id,
-            ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
-        )
         await user.process_message(event)
-        self.is_album = False
-        self.start_time = -1
+        user.is_album_on_source = False
+        user.start_time_on_source = -1
 
     async def handle_new_message_on_backup_group(self, event):
         print(f"handle_new_message_on_backup_group Event type: {type(event)}")
+        #await self.show_notification_menu(event)
 
     async def handle_new_album_on_source_group(self, event):
-        self.is_album = True
-        print("album_handler Album source_group")
-
         user = self.users.setdefault(
             event.sender_id,
             ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
         )
+        user.is_album_on_source = True
+        print("album_handler Album source_group")
+
         await user.process_message(event)
-        self.is_album = False
-        self.start_time = -1
+        user.is_album_on_source = False
+        user.start_time_on_source = -1
         print("Bottom of the handle_new_album_on_source_group function!!!")
 
     async def handle_new_album_on_backup_group(self, event: events.Album.Event):

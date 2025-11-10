@@ -23,6 +23,10 @@ class ContentModerator:
         self.message_counter = 0
         self.is_it_album = False
         self.albums = defaultdict(list)
+        self.is_album_on_source = False
+        self.start_time_on_source = -1
+        self.is_album_on_backup = False
+        self.start_time_on_backup = -1
 
     async def process_message(self, event):
         print("def process_message")
