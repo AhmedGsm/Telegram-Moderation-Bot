@@ -65,6 +65,7 @@ class TelegramPostManager:
 
     async def handle_new_message_on_source_group(self, event):
         print(f"handle_new_message_on_source_group Event type: {type(event)}")
+
         user = self.users.setdefault(
             event.sender_id,
             ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
@@ -73,7 +74,17 @@ class TelegramPostManager:
         if user.is_album_on_source:
             return
 
-        await self.filter_single_message(user)
+        if user.start_time_on_source < 0:
+            user.start_time_on_source = time.time()
+        else:
+            diff = time.time() - user.start_time_on_source
+            if diff < SINGLE_MESSAGE_DETECTION_TIMEOUT:
+                user.is_album_on_source = True
+                return
+
+
+        #await self.filter_single_message(user)
+        await asyncio.sleep(0)
 
         if user.is_album_on_source:
             return
@@ -89,7 +100,7 @@ class TelegramPostManager:
         await user.process_message(event)
         user.is_album_on_source = False
         user.start_time_on_source = -1
-
+    """
     async def filter_single_message(self, user):
         if user.start_time_on_source < 0:
             user.start_time_on_source = time.time()
@@ -99,7 +110,7 @@ class TelegramPostManager:
             if diff > SINGLE_MESSAGE_DETECTION_TIMEOUT:
                 print("Waiting Album...")
                 break
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.1)"""
 
     async def handle_new_message_on_backup_group(self, event):
         print(f"handle_new_message_on_backup_group Event type: {type(event)}")
