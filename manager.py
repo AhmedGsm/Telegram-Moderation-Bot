@@ -71,22 +71,7 @@ class TelegramPostManager:
             ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
         )
 
-        if user.is_album_on_source:
-            return
-
-        if user.start_time_on_source < 0:
-            user.start_time_on_source = time.time()
-        else:
-            diff = time.time() - user.start_time_on_source
-            if diff < SINGLE_MESSAGE_DETECTION_TIMEOUT:
-                user.is_album_on_source = True
-                return
-
-
-        #await self.filter_single_message(user)
-        await asyncio.sleep(0)
-
-        if user.is_album_on_source:
+        if await self.filter_single_message_detection(user, "source") == -1:
             return
 
         """actual_time = time.time()
@@ -100,17 +85,43 @@ class TelegramPostManager:
         await user.process_message(event)
         user.is_album_on_source = False
         user.start_time_on_source = -1
-    """
-    async def filter_single_message(self, user):
-        if user.start_time_on_source < 0:
-            user.start_time_on_source = time.time()
-        while not user.is_album_on_source:
-            now = time.time()
-            diff = now - user.start_time_on_source
-            if diff > SINGLE_MESSAGE_DETECTION_TIMEOUT:
-                print("Waiting Album...")
-                break
-            await asyncio.sleep(0.1)"""
+
+    async def filter_single_message_detection(self, user, group: str):
+        if group == "source":
+            is_album_attr = "is_album_on_source"
+            start_attr = "start_time_on_source"
+        elif group == "backup":
+            is_album_attr = "is_album_on_backup"
+            start_attr = "start_time_on_backup"
+        else:
+            print("Unknown group name -- Filtering single message detection")
+            return
+
+        # get current values dynamically
+        is_album = getattr(user, is_album_attr)
+        start_time = getattr(user, start_attr)
+
+        if is_album:
+            return -1
+
+        if start_time < 0:
+            # assign by reference using setattr
+            setattr(user, start_attr, time.time())
+        else:
+            diff = time.time() - start_time
+            print(f"Diff between 2 msgs: {diff:.2f}s")
+            if diff < SINGLE_MESSAGE_DETECTION_TIMEOUT:
+                setattr(user, is_album_attr, True)
+                return -1
+            # update start time after valid message
+            setattr(user, start_attr, time.time())
+
+        await asyncio.sleep(0)
+
+        if getattr(user, is_album_attr):
+            return -1
+
+        return 0
 
     async def handle_new_message_on_backup_group(self, event):
         print(f"handle_new_message_on_backup_group Event type: {type(event)}")
