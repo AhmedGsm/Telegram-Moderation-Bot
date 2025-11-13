@@ -66,10 +66,7 @@ class TelegramPostManager:
     async def handle_new_message_on_source_group(self, event):
         print(f"handle_new_message_on_source_group Event type: {type(event)}")
 
-        user = self.users.setdefault(
-            event.sender_id,
-            ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
-        )
+        user = await self.get_sender(event)
 
         if await self.filter_single_message_detection(user, "source") == -1:
             return
@@ -85,6 +82,13 @@ class TelegramPostManager:
         await user.process_message(event)
         user.is_album_on_source = False
         user.start_time_on_source = -1
+
+    async def get_sender(self, event):
+        user = self.users.setdefault(
+            event.sender_id,
+            ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
+        )
+        return user
 
     async def filter_single_message_detection(self, user, group: str):
         if group == "source":
@@ -121,30 +125,48 @@ class TelegramPostManager:
         if getattr(user, is_album_attr):
             return -1
 
+        """setattr(user, is_album_attr, False)
+        setattr(user, start_attr, -1)"""
         return 0
 
     async def handle_new_message_on_backup_group(self, event):
         print(f"handle_new_message_on_backup_group Event type: {type(event)}")
-        #await self.show_notification_menu(event)
+
+        user = await self.get_sender(event)
+
+        """"""
+        if await self.filter_single_message_detection(user, "backup") == -1:
+            return
+
+        await self.show_notification_menu(event)
+
+        await self.reset_attributes(user)
 
     async def handle_new_album_on_source_group(self, event):
-        user = self.users.setdefault(
-            event.sender_id,
-            ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
-        )
+        user = await self.get_sender(event)
         print(" ".join(["Album detected within" , str(time.time() - user.start_time_on_source), "seconds"]))
         user.is_album_on_source = True
         print("album_handler Album source_group")
 
         await user.process_message(event)
+        await self.reset_attributes(user)
+
+        print("Bottom of the handle_new_album_on_source_group function!!!")
+
+    async def reset_attributes(self, user):
         user.is_album_on_source = False
         user.start_time_on_source = -1
-        print("Bottom of the handle_new_album_on_source_group function!!!")
+        user.is_album_on_backup = False
+        user.start_time_on_backup = -1
 
     async def handle_new_album_on_backup_group(self, event: events.Album.Event):
         #print(f"handle_new_album_on_backup_group Event type: {type(event)}")
         print("album_handler Album  Backup Group!")
+        user = await self.get_sender(event)
+
         await self.show_notification_menu(event)
+        await self.reset_attributes(user)
+
         print("Bottom of the handle_new_album_on_backup_group function !!")
 
 
@@ -277,7 +299,7 @@ class TelegramPostManager:
         self.user_client.add_event_handler(self.handle_new_message_on_source_group,
                                       events.NewMessage(chats=self.source_group))
         self.user_client.add_event_handler(self.handle_new_message_on_backup_group,
-                                      events.NewMessage(chats=self.backup_group)) #, forwards=True
+                                      events.NewMessage(chats=self.backup_group, forwards=True)) #, forwards=True
         self.user_client.add_event_handler(self.handle_new_album_on_backup_group,
                                            events.Album(chats=self.backup_group))
         self.client.add_event_handler(self.callback_handler)
