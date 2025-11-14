@@ -6,8 +6,11 @@ from collections import defaultdict
 
 from telethon import TelegramClient, events, Button
 
-from constants import SINGLE_MESSAGE_DETECTION_TIMEOUT
+from constants import SINGLE_MESSAGE_DETECTION_TIMEOUT, NOTIFICATION_NO_DIRECT_POSTING_IN_BACKUP_GROUP, \
+    DELETE_NOTIFICATION_DELAY
 from moderator import ContentModerator
+from utils import Utils
+
 
 class TelegramPostManager:
     def __init__(self, api_id, api_hash, bot_token, source_group, backup_group, admin_id):
@@ -16,8 +19,7 @@ class TelegramPostManager:
         self.user_client = None
         with open("config/config.json") as f:
             self.config = json.load(f)
-        bot_token = self.config["TELEGRAM_BOT_TOKEN"]
-        self.bot_id = int(bot_token.split(":")[0])
+        self.bot_id = -1
         self.api_id = api_id
         self.api_hash = api_hash
         self.bot_token = bot_token
@@ -130,11 +132,33 @@ class TelegramPostManager:
         return 0
 
     async def handle_new_message_on_backup_group(self, event):
+        await asyncio.sleep(0.2)
         print(f"handle_new_message_on_backup_group Event type: {type(event)}")
+
+        if not event.message.from_id.user_id == self.bot_id : #or
+
+            # Delete notification after moments
+            await event.delete()
+
+            # No posting allowed notification
+            print(NOTIFICATION_NO_DIRECT_POSTING_IN_BACKUP_GROUP)
+            await Utils.notify_user(self.client, self.backup_group, event,
+                                    NOTIFICATION_NO_DIRECT_POSTING_IN_BACKUP_GROUP,
+                                    DELETE_NOTIFICATION_DELAY)
+
+            return
+
+        # If the message is not forwarded from the source group then don't display notification
+        if not event.message.forward:
+            return
+        """if event.message.forward:
+            pass
+        if not event.message.fwd_from:
+            print("Direct message not allowed in the backup group, only bot allowed to forward!")
+            return"""
 
         user = await self.get_sender(event)
 
-        """"""
         if await self.filter_single_message_detection(user, "backup") == -1:
             return
 
@@ -160,8 +184,15 @@ class TelegramPostManager:
         user.start_time_on_backup = -1
 
     async def handle_new_album_on_backup_group(self, event: events.Album.Event):
+        await asyncio.sleep(0.2)
         #print(f"handle_new_album_on_backup_group Event type: {type(event)}")
         print("album_handler Album  Backup Group!")
+
+        if not event.messages[0].forward:
+            print(f"Direct message detected, skipping.")
+            return  # Skip processing forwarded messages
+
+
         user = await self.get_sender(event)
 
         await self.show_notification_menu(event)
@@ -290,6 +321,7 @@ class TelegramPostManager:
     async def start(self):
 
         await self.client.start(bot_token=self.bot_token)
+        self.bot_id = (await self.client.get_me()).id
         await self.fetch_users_from_group(self.backup_group, 1000)
         print("Bot started successfully")
 
@@ -299,7 +331,7 @@ class TelegramPostManager:
         self.user_client.add_event_handler(self.handle_new_message_on_source_group,
                                       events.NewMessage(chats=self.source_group))
         self.user_client.add_event_handler(self.handle_new_message_on_backup_group,
-                                      events.NewMessage(chats=self.backup_group, forwards=True)) #, forwards=True
+                                      events.NewMessage(chats=self.backup_group)) #, forwards=True
         self.user_client.add_event_handler(self.handle_new_album_on_backup_group,
                                            events.Album(chats=self.backup_group))
         self.client.add_event_handler(self.callback_handler)

@@ -2,6 +2,7 @@ import asyncio
 from collections import defaultdict
 from telethon.tl.types import Message
 from constants import *
+from utils import Utils
 
 
 class ContentModerator:
@@ -89,7 +90,8 @@ class ContentModerator:
         await event.delete()
         #await self.client.delete_messages(self.source_group, [msg.id for msg in album])
         # Send notification
-        await self.notify_user(event, self.notification_message)
+        #await self.notify_user(event, self.notification_message)
+        await Utils.notify_user(self.client, self.source_group, event, self.notification_message, DELETE_NOTIFICATION_DELAY)
 
     async def notify_user(self, event, message):
         """Notify user about hidden post"""
