@@ -9,59 +9,58 @@ import secrets
 import subprocess
 from flask import redirect, url_for
 
-def get_or_create_secret_key():
-    config_dir = 'config'
-    key_file = os.path.join(config_dir, 'secret.key')
+class Setup:
+    @staticmethod
+    def get_or_create_secret_key():
+        config_dir = 'config'
+        key_file = os.path.join(config_dir, 'secret.key')
+    
+        # Create config directory if it doesn't exist
+        os.makedirs(config_dir, exist_ok=True)
+    
+        # Generate new key if doesn't exist
+        if not os.path.exists(key_file):
+            secret_key = secrets.token_hex(32)
+            with open(key_file, 'w') as f:
+                f.write(secret_key)
+            return secret_key
+    
+        # Read existing key
+        with open(key_file, 'r') as f:
+            return f.read().strip()
 
-    # Create config directory if it doesn't exist
-    os.makedirs(config_dir, exist_ok=True)
+    @staticmethod
+    def clear_session(username):
+        # Delete previous session file if it exists
+        session_file = f"{username}.session"
+        if os.path.exists(session_file):
+            os.remove(session_file)
+            print(f"Deleted previous session file: {session_file}")
+        # Also delete any previous session-journal file
+        session_journal_file = f"{username}.session-journal"
+        if os.path.exists(session_journal_file):
+            os.remove(session_journal_file)
+            print(f"Deleted previous session journal file: {session_journal_file}")
+        # Clear any existing session data
+        session.clear()
 
-    # Generate new key if doesn't exist
-    if not os.path.exists(key_file):
-        secret_key = secrets.token_hex(32)
-        with open(key_file, 'w') as f:
-            f.write(secret_key)
-        return secret_key
-
-    # Read existing key
-    with open(key_file, 'r') as f:
-        return f.read().strip()
-
+    @staticmethod
+    def fetch_groups( client):
+        # Get all dialogs
+        groups = []
+        dialogs = client.get_dialogs()
+        for dialog in dialogs:
+            if dialog.is_group or dialog.is_channel:
+                groups.append({
+                    'name': dialog.name,
+                    'id': dialog.id,
+                    'type': 'Channel' if dialog.is_channel else 'Group'
+                })
+        #client.disconnect()
+        return groups
 
 app = Flask(__name__)
-app.secret_key = get_or_create_secret_key()
-
-# Ensure the config directory exists
-os.makedirs('config', exist_ok=True)
-
-
-def clear_session(username):
-    # Delete previous session file if it exists
-    session_file = f"{username}.session"
-    if os.path.exists(session_file):
-        os.remove(session_file)
-        print(f"Deleted previous session file: {session_file}")
-    # Also delete any previous session-journal file
-    session_journal_file = f"{username}.session-journal"
-    if os.path.exists(session_journal_file):
-        os.remove(session_journal_file)
-        print(f"Deleted previous session journal file: {session_journal_file}")
-    # Clear any existing session data
-    session.clear()
-
-def fetch_groups(client):
-    # Get all dialogs
-    groups = []
-    dialogs = client.get_dialogs()
-    for dialog in dialogs:
-        if dialog.is_group or dialog.is_channel:
-            groups.append({
-                'name': dialog.name,
-                'id': dialog.id,
-                'type': 'Channel' if dialog.is_channel else 'Group'
-            })
-    #client.disconnect()
-    return groups
+app.secret_key = Setup.get_or_create_secret_key()
 
 @app.route('/')
 def index():
@@ -142,7 +141,7 @@ def setup_session():
                 'message': 'Verification code sent to your Telegram account. Please enter it below.'
             })
 
-        groups = fetch_groups(client)
+        groups = Setup.fetch_groups(client)
         return jsonify({'status': 'success', 'groups': groups})
 
     except SessionPasswordNeededError:
@@ -164,10 +163,6 @@ def setup_session():
         # PROPERLY DISCONNECT before returning
         if client and client.is_connected():
             client.disconnect()
-
-
-
-
 
 @app.route('/verify_code', methods=['POST'])
 def verify_code():
@@ -193,7 +188,7 @@ def verify_code():
         client.sign_in(phone=session['phone'], code=code, phone_code_hash=session['phone_code_hash'])
 
         # Get all dialogs
-        groups = fetch_groups(client)
+        groups = Setup.fetch_groups(client)
         return jsonify({'status': 'success', 'groups': groups})
 
     except PhoneCodeInvalidError:
@@ -276,6 +271,13 @@ def run_page():
 def no_setup():
     return render_template('no-setup.html')
 
+
+
+
 if __name__ == '__main__':
+
+    # Ensure the config directory exists
+    os.makedirs('config', exist_ok=True)
+
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=os.environ.get('DEBUG', True), use_reloader=False)
