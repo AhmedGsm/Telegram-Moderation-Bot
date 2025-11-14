@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const codeInputs = document.querySelectorAll('.code-input');
   const fullCodeInput = document.getElementById('full-code');
   const dialog_overlay = document.querySelector('.dialog-overlay');
+  let password2FaRequired = false;
   let codeVerificationForm ;
   let messageContainer;
   let closeBtn ;
@@ -36,8 +37,6 @@ function getFormData() {
 
     };
 }
-
-
 
   // --- Helpers ---
   function showMessage(message, type = 'success') {
@@ -306,33 +305,98 @@ function getFormData() {
     // Verify code button (if exists)
     if (verifyCodeBtn) {
       verifyCodeBtn.addEventListener('click', async function (e) {
-        e.preventDefault()
+        e.preventDefault();
         
         // Show loading state
         submitCodeBtn.disabled = true;
         submitCodeBtn.textContent = 'Verifying...';
-
+        
+        const codeLabel = document.getElementById('code-label');
+        const codeDefinition = document.getElementById('code-login-definition');
+        const codeContainer = document.querySelector(".code-input-container");
+        const twoFaAuthPasswordInput = document.getElementById('2fa-password');
         const code = document.getElementById('full-code')?.value;
+
         if (!code) {
           showMessageVerificationCode('Please enter verification code', 'error');
           return;
         }
 
         try {
-          const data = await safeFetch('/verify_code', { code: code });
-          if (data.status === 'success') {
-            showMessageVerificationCode(data.message, 'success');
-            // Hide code verification dialog
-            dialog_overlay.style.display = "none";
-            // Display groups
-            displayGroups(data.groups || []);
-            showMessageVerificationCode('Groups fetched successfully.', 'success');
-          } else {
-            showMessageVerificationCode(data.message || 'Verification failed.', 'error');
-            
-            // Enable and reinstate submit button
-            submitCodeBtn.disabled = false;
-            submitCodeBtn.textContent = 'Verify Code';
+          if (password2FaRequired) {
+
+                // Disable password input
+                twoFaAuthPasswordInput.style.enabled = false;
+
+                // Submit password via Ajax
+                const data = await safeFetch('/validate_2fa', { password: twoFaAuthPasswordInput.value });
+
+                // Get response from server
+                if (data.status === 'success') {
+
+                  // Display groups
+                  displayGroups(data.groups || []);
+                  // Hide the login dialog overlay
+                  dialog_overlay.style.display = "none";
+                  //showMessageVerificationCode('Groups fetched successfully.', 'success');
+                  showMessage('Groups fetched successfully.',  'success')
+                  
+                  return
+                } else {
+                  showMessageVerificationCode(data.message || 'Login failed.', 'error');
+                  
+                  // Enable and reinstate submit button
+                  submitCodeBtn.disabled = false;
+                  submitCodeBtn.textContent = 'Enter password';
+                }
+            } else {
+            const data = await safeFetch('/verify_code', { code: code });
+            if (data.status === 'success') {
+              //showMessageVerificationCode(data.message || 'Login success', 'success');
+              // Display groups
+              displayGroups(data.groups || []);
+              // Hide the login dialog overlay
+              dialog_overlay.style.display = "none";
+
+              // Display success fetching message
+              showMessage('Groups fetched successfully.',  'success')
+              // showMessageVerificationCode('Groups fetched successfully.', 'success');
+            } else {
+              
+              // Hide 2fa input field
+              // twoFaAuthPasswordInput.style.display = "none";
+
+              // Check if user activated 2FA in his TG account
+              if (data["2fa_required"] !== undefined) {
+                // Update 2fa state condition
+                password2FaRequired = true;
+
+                // Display info message
+                showMessageVerificationCode(data.message || 'Verification failed.', 'info');
+
+                // Display 2fa input field
+                twoFaAuthPasswordInput.style.display = "initial";
+                codeContainer.style.display = "none";
+                codeDefinition.textContent = "Please introduce your Telegram password to login";
+                submitCodeBtn.textContent = 'Submit Password';
+
+                // Change label text
+                codeLabel.textContent = "Enter password";
+
+                // Enable and reinstate submit button
+                submitCodeBtn.disabled = false;
+
+                // Terminate the function
+                return
+
+              }
+              showMessageVerificationCode(data.message || 'Verification failed.', 'error');
+              
+              // Enable and reinstate submit button
+              submitCodeBtn.disabled = false;
+              submitCodeBtn.textContent = 'Verify Code';
+              
+            }
           }
         } catch (e) {
           showMessageVerificationCode('An error occurred: ' + e.message, 'error');
@@ -480,7 +544,7 @@ function getFormData() {
   }
 
   // Form submission
-  function codeVerificationFormEvent() {
+  /*function codeVerificationFormEvent() {
     codeVerificationForm.addEventListener('submit', function (e) {
       e.preventDefault();
 
@@ -524,7 +588,7 @@ function getFormData() {
           submitBtn.textContent = 'Verify Code';
         });
     });
-  }
+  }*/
   // Show message in the message container
   function showMessageVerificationCode(message, type) {
     messageContainer.textContent = message;

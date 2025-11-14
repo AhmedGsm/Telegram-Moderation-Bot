@@ -3,7 +3,8 @@ from flask import Flask, render_template, request, jsonify, session
 import json
 import os
 from telethon.sync import TelegramClient
-from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError, PhoneCodeInvalidError, PhoneCodeExpiredError
+from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError, PhoneCodeInvalidError, \
+    PhoneCodeExpiredError, PasswordHashInvalidError
 import asyncio
 import secrets
 import subprocess
@@ -204,7 +205,7 @@ def verify_code():
     except SessionPasswordNeededError:
 
         return jsonify(
-            {'status': 'error', 'message': 'Two-factor authentication is enabled. Please provide your password.'}), 400
+            {'status': 'error', '2fa_required': '2fa', 'message': 'Two-factor authentication is enabled. Please provide your password.'}), 400
 
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}), 500
@@ -214,12 +215,16 @@ def verify_code():
         if client and client.is_connected():
             client.disconnect()
 
-
+"""
 @app.route('/verify_password', methods=['POST'])
 def verify_password():
     try:
         data = request.json
         password = data['password']
+
+        # Run the Telethon code in an event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
         # Recreate client from session
         client = TelegramClient(session['session_name'], session['api_id'], session['api_id'])
@@ -245,8 +250,42 @@ def verify_password():
         return jsonify({'status': 'success', 'groups': groups})
 
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
+        return jsonify({'status': 'error', 'message': str(e)})"""
 
+@app.route('/validate_2fa', methods=['POST'])
+def validate_2fa():
+    try:
+        data = request.json
+        password = data['password']
+
+        # Run the Telethon code in an event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        # Recreate the client from the session
+        client = TelegramClient(session['session_name'], session['api_id'], session['api_hash'])
+        client.connect()
+
+        # Try signing in using the provided password if 2FA is enabled
+        client.sign_in(password=password)
+
+        # If sign-in is successful, fetch the groups
+        groups = Setup.fetch_groups(client)
+        return jsonify({'status': 'success', 'groups': groups})
+
+    except PasswordHashInvalidError:
+        return jsonify({
+            'status': 'error',
+            'message': 'Incorrect password. Please try again.'
+        }), 400
+
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}), 500
+
+    finally:
+        # Properly disconnect before returning
+        if client and client.is_connected():
+            client.disconnect()
 
 @app.route('/run_bot', methods=['POST'])
 def run_bot():

