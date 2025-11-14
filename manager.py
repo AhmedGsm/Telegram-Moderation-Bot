@@ -1,5 +1,5 @@
 import asyncio
-import hashlib
+
 import json
 import time
 from collections import defaultdict
@@ -14,8 +14,8 @@ from utils import Utils
 
 class TelegramPostManager:
     def __init__(self, api_id, api_hash, bot_token, source_group, backup_group, admin_id):
-        self.session_name = hashlib.md5(str(admin_id).encode()).hexdigest()
-        self.client = TelegramClient("_".join(["bot", self.session_name]), api_id, api_hash)
+        self.client = TelegramClient(Utils.hash_session_name(admin_id, "bot"),
+                                     api_id, api_hash)
         self.user_client = None
         with open("config/config.json") as f:
             self.config = json.load(f)
@@ -33,13 +33,12 @@ class TelegramPostManager:
         self.previous_time = time.time()
         self.time_2_message = 0.1
 
-
     async def fetch_users_from_group(self, group_id, limit):
         # Start the client to fetch group messages
         # Generate a unique session name by hashing the admin_id
 
 
-        self.user_client = TelegramClient("_".join(["user", self.session_name]),
+        self.user_client = TelegramClient(Utils.hash_session_name(self.admin_id, "user"),
                                               self.api_id, self.api_hash)
         await self.user_client.start()
         # Replace 'group_name' with your group's name or ID

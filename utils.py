@@ -1,5 +1,5 @@
 import asyncio
-
+import hashlib
 
 class Utils:
     @staticmethod
@@ -48,3 +48,9 @@ class Utils:
 
         except Exception as e:
             print(f"[NotifyUser] Error when sending notification: {e}")
+
+    @staticmethod
+    def hash_session_name(admin_id, prefix):
+        return "_".join([prefix,
+                         hashlib.md5(str(admin_id).encode()).hexdigest()])
+

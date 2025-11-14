@@ -9,6 +9,9 @@ import secrets
 import subprocess
 from flask import redirect, url_for
 
+from utils import Utils
+
+
 class Setup:
     @staticmethod
     def get_or_create_secret_key():
@@ -99,9 +102,8 @@ def save_config():
 
 @app.route('/setup_session', methods=['POST'])
 def setup_session():
-    client = None
-    try:
 
+    try:
         data = request.json
         #clear_session(data['username'])
 
@@ -119,8 +121,11 @@ def setup_session():
         # Run the Telethon code in an event loop
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        session_name = Utils.hash_session_name(admin_id, "user")
+        # Save session name in a session
+        session['session_name'] = session_name
 
-        client = TelegramClient(session['admin_id'] , api_id, api_hash)
+        client = TelegramClient(session_name, api_id, api_hash)
         # Check if we need to sign in
         if not client.is_connected():
             client.connect()
@@ -164,9 +169,10 @@ def setup_session():
         if client and client.is_connected():
             client.disconnect()
 
+
 @app.route('/verify_code', methods=['POST'])
 def verify_code():
-    client = None
+    #client = None
     try:
         data = request.json
         code = data['code']
@@ -176,11 +182,7 @@ def verify_code():
         asyncio.set_event_loop(loop)
 
         # Recreate client from session
-        client = TelegramClient(
-            session=session['admin_id'],
-            api_id=session['api_id'],
-            api_hash=session['api_hash']
-        )
+        client = TelegramClient(session['session_name'], session['api_id'], session['api_id'])
 
         client.connect()
 
@@ -220,12 +222,9 @@ def verify_password():
         password = data['password']
 
         # Recreate client from session
-        client = TelegramClient(
-            session=session['admin_id'],
-            api_id=session['api_id'],
-            api_hash=session['api_hash']
-        )
+        client = TelegramClient(session['session_name'], session['api_id'], session['api_id'])
 
+        # Connect the client
         client.connect()
 
         # Sign in with the password
@@ -270,9 +269,6 @@ def run_page():
 @app.route('/no-setup')
 def no_setup():
     return render_template('no-setup.html')
-
-
-
 
 if __name__ == '__main__':
 
