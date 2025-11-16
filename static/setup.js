@@ -206,7 +206,7 @@ function getFormData() {
           if (registerForm) registerForm.style.display = 'none';
           if (groupsContainer) groupsContainer.style.display = 'none';
           // Show run bot button
-          if (runBotButton) runBotButton.style.display = "block";
+          if (runBotButton) runBotButton.style.display = "flex";
         } else {
           showMessage(data.message || 'Failed to save configuration.', 'error');
         }

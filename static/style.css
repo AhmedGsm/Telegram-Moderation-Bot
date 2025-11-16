@@ -360,6 +360,15 @@ body {
   color: var(--gray-600);
 }
 
+#runBotBtnContainer  {
+  display: flex;
+  justify-content: center;
+}
+
+#runBotBtnContainer button {
+  margin: 10px auto;
+}
+
 /* Mobile Menu Toggle */
 .menu-toggle {
   display: none;
