@@ -32,6 +32,7 @@ class TelegramPostManager:
         self.user_event = None
         self.previous_time = time.time()
         self.time_2_message = 0.1
+        self.is_notification_shown = False
 
     async def fetch_users_from_group(self, group_id, limit):
         # Start the client to fetch group messages
@@ -64,30 +65,12 @@ class TelegramPostManager:
                     )
                     user.albums[grouped_id].append(msg.id)
 
-    async def handle_new_message_on_source_group(self, event):
-        print(f"handle_new_message_on_source_group Event type: {type(event)}")
-
-        user = await self.get_sender(event)
-
-        if await self.filter_single_message_detection(user, "source") == -1:
-            return
-
-        """actual_time = time.time()
-        time_between_messages = actual_time - self.previous_time
-        if time_between_messages <= self.time_2_message:
-            return
-        print("Time elapsed: " + str(time_between_messages))
-        self.previous_time = actual_time"""
 
 
-        await user.process_message(event)
-        user.is_album_on_source = False
-        user.start_time_on_source = -1
-
-    async def get_sender(self, event):
+    async def get_sender(self, event, client):
         user = self.users.setdefault(
             event.sender_id,
-            ContentModerator(self.user_client, self.source_group, self.backup_group, self.admin_id)
+            ContentModerator(client, self.source_group, self.backup_group, self.admin_id)
         )
         return user
 
@@ -130,11 +113,34 @@ class TelegramPostManager:
         setattr(user, start_attr, -1)"""
         return 0
 
+    async def handle_new_message_on_source_group(self, event):
+        print(f"handle_new_message_on_source_group Event type: {type(event)}")
+
+        user = await self.get_sender(event, self.client)
+
+        if await self.filter_single_message_detection(user, "source") == -1:
+            return
+
+        """actual_time = time.time()
+        time_between_messages = actual_time - self.previous_time
+        if time_between_messages <= self.time_2_message:
+            return
+        print("Time elapsed: " + str(time_between_messages))
+        self.previous_time = actual_time"""
+
+
+        await user.process_message(event)
+        user.is_album_on_source = False
+        user.start_time_on_source = -1
+
     async def handle_new_message_on_backup_group(self, event):
+
         await asyncio.sleep(0.2)
         print(f"handle_new_message_on_backup_group Event type: {type(event)}")
 
-        if not event.message.from_id.user_id == self.bot_id : #or
+        if event.message.from_id.user_id != self.bot_id:
+
+        #if not event.message.from_id.user_id == self.bot_id: #or
 
             # Delete notification after moments
             await event.delete()
@@ -156,17 +162,17 @@ class TelegramPostManager:
             print("Direct message not allowed in the backup group, only bot allowed to forward!")
             return"""
 
-        user = await self.get_sender(event)
+        user = await self.get_sender(event, self.client)
 
         if await self.filter_single_message_detection(user, "backup") == -1:
             return
 
-        await self.show_notification_menu(event)
+        #await self.show_notification_menu(event)
 
         await self.reset_attributes(user)
 
     async def handle_new_album_on_source_group(self, event):
-        user = await self.get_sender(event)
+        user = await self.get_sender(event, self.client)
         print(" ".join(["Album detected within" , str(time.time() - user.start_time_on_source), "seconds"]))
         user.is_album_on_source = True
         print("album_handler Album source_group")
@@ -182,22 +188,28 @@ class TelegramPostManager:
         user.is_album_on_backup = False
         user.start_time_on_backup = -1
 
-    async def handle_new_album_on_backup_group(self, event: events.Album.Event):
+    async def handle_new_album_on_backup_group(self, event):
+        print("Program Starts asyncio.sleep(0.2)")
         await asyncio.sleep(0.2)
         #print(f"handle_new_album_on_backup_group Event type: {type(event)}")
-        print("album_handler Album  Backup Group!")
-
         if not event.messages[0].forward:
             print(f"Direct message detected, skipping.")
             return  # Skip processing forwarded messages
 
 
-        user = await self.get_sender(event)
-
-        await self.show_notification_menu(event)
+        print("user = await self.get_sender(event, self.client)")
+        user = await self.get_sender(event, self.client)
+        if not self.is_notification_shown:
+            print("self.is_notification_shown = True")
+            self.is_notification_shown = True
+            print("await self.show_notification_menu(event)")
+            await self.show_notification_menu(event)
+            return
+        print("await self.reset_attributes(user)")
         await self.reset_attributes(user)
-
-        print("Bottom of the handle_new_album_on_backup_group function !!")
+        print("self.is_notification_shown = False")
+        await asyncio.sleep(0)
+        self.is_notification_shown = False
 
 
     async def show_notification_menu(self, event):
