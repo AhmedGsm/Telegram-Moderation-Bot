@@ -167,7 +167,7 @@ class TelegramPostManager:
         if await self.filter_single_message_detection(user, "backup") == -1:
             return
 
-        #await self.show_notification_menu(event)
+        await self.show_notification_menu(event)
 
         await self.reset_attributes(user)
 
@@ -213,6 +213,9 @@ class TelegramPostManager:
 
 
     async def show_notification_menu(self, event):
+
+        # Get User ID
+        user_id = event.forward.from_id.user_id
         text = (
             "✨ <b>Welcome!</b>\n"
             "I'm alive and glowing.\n\n"
@@ -238,9 +241,16 @@ class TelegramPostManager:
             [
                 Button.inline("✅ Approve", f"approve:{message_id}:{message_type}".encode()),
                 Button.inline("🚫 Reject", f"reject:{message_id}:{message_type}".encode())
-            ]
+            ],
+            [
+                Button.inline("🚫 Ban", f"ban:{user_id}:{message_id}".encode()),
+                Button.inline("🔇 Mute", f"mute:{user_id}:{message_id}".encode())
+            ],
+            [
+                Button.inline("⚠ Warn", f"warn:{user_id}:{message_id}".encode()),
+                Button.inline("👢 Kick", f"kick:{user_id}:{message_id}".encode())
+            ],
         ]
-
 
         # Display notification
         """await event.respond(
@@ -272,12 +282,16 @@ class TelegramPostManager:
         # "approve" button logic
         if action == "approve":
             # Edit original message text + remove buttons
-            await event.edit(
+            """await event.edit(
                 "✅ <b>Approved!</b>\n"
                 "Action has been registered successfully.",
                 buttons=None,
                 parse_mode="html"
-            )
+            )"""
+
+            await self.show_action_notification(event,"✅ <b>Approved!</b>\n",
+                                                "Post has been registered successfully.")
+
             # Optional popup
             await event.answer("Approved ✔", alert=True)
 
@@ -295,18 +309,80 @@ class TelegramPostManager:
                 from_peer=self.backup_group
             )
 
-
         # "reject" button logic
         elif action == "reject":
-            await event.edit(
-                "❌ <b>Rejected.</b>\n"
-                "The item will not be published.",
-                buttons=None,
+            # Show action notification
+            await self.show_action_notification(event,"❌ <b>Rejected.</b>\n",
+                                                "The item will not be published.")
+
+            # Send DM message notification
+            await self.user_client.send_message(
+                user_id,
+                f"❌ <b>{event.chat.title}:</b>\n\n Your post is rejected by admins, please follow group rules.",
                 parse_mode="html"
             )
-            await event.answer("Rejected ❌", alert=True)
 
             #await user_event.delete()
+
+        elif action == "warn":
+            await self.user_client.send_message(              user_id,
+                (
+                    f"⚠ <b>Warning from the admins of the '{event.chat.title}' group</b>\n\n"
+
+                    "You have received this warning because you shared a message "
+                    "that does not respect the rules of the group "
+                    "(for example: spam, advertising, offensive language, or inappropriate media).\n\n"
+                    "Please make sure your next messages follow the rules. "
+                    "Repeated violations may lead to a mute, kick, or ban."
+                ),
+                parse_mode="html"
+            )
+
+            # Display warning notification
+            await self.show_action_notification(event,"⚠ <b>Warning .</b>\n",
+                                                "DM Warning has been sent to user .")
+
+        elif action == "kick":
+            try:
+                # Kick the user one time
+                await self.client.kick_participant(self.source_group, user_id)
+
+                # Display action notification
+                await self.show_action_notification(event, "❌ <b>User Kicked .</b>\n",
+                                                    "User has been kicked .")
+
+            except Exception as e:
+                await event.answer(f"Kick failed: {e}", alert=True)
+                await self.show_action_notification(event, "❌ <b>User Kicked .</b>\n",
+                                                    "Failed to kick user .")
+                return
+
+        elif action == "mute":
+            await self.user_client.edit_permissions(
+                self.source_group,
+                user_id,
+                send_messages=False
+            )
+            await self.show_action_notification(event,"⚠ <b>User Muted .</b>\n",
+                                                "User has been muted .")
+
+        elif action == "ban":
+            await self.user_client.edit_permissions(
+                self.source_group,
+                user_id,
+                view_messages=False)
+            """
+            await self.user_client.edit_permissions(
+                self.source_group,
+                8324555069,
+                view_messages=True,
+                send_messages=True
+            )
+            """
+            #await event.answer("User has been banned 🚫", alert=True)
+
+            await self.show_action_notification(event,"❌ <b>User banned.</b>\n",
+                                                "User has been banned.")
 
         # "more" button logic
 
@@ -328,6 +404,13 @@ class TelegramPostManager:
 
         # Delete message notification
         await event.delete()
+
+    async def show_action_notification(self, event, title, text):
+        await event.edit(
+            f"{title}\n{text}",
+            buttons=None,
+            parse_mode="html"
+        )
 
     async def start(self):
 
