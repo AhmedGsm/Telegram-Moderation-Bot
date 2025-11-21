@@ -9,6 +9,7 @@ from telethon import TelegramClient, events, Button
 from constants import SINGLE_MESSAGE_DETECTION_TIMEOUT, NOTIFICATION_NO_DIRECT_POSTING_IN_BACKUP_GROUP, \
     DELETE_NOTIFICATION_DELAY
 from moderator import ContentModerator
+from userdb import UserDB
 from utils import Utils
 
 
@@ -33,6 +34,7 @@ class TelegramPostManager:
         self.previous_time = time.time()
         self.time_2_message = 0.1
         self.is_notification_shown = False
+        self.db = UserDB()
 
     async def fetch_users_from_group(self, group_id, limit):
         # Start the client to fetch group messages
@@ -64,8 +66,6 @@ class TelegramPostManager:
                         ContentModerator(self.client, self.source_group, self.backup_group, self.admin_id)
                     )
                     user.albums[grouped_id].append(msg.id)
-
-
 
     async def get_sender(self, event, client):
         user = self.users.setdefault(
@@ -130,6 +130,11 @@ class TelegramPostManager:
 
 
         await user.process_message(event)
+
+        # add user to db
+        telegram_user = await event.get_sender()
+        self.db.ensure_user(telegram_user)
+
         user.is_album_on_source = False
         user.start_time_on_source = -1
 
@@ -178,6 +183,11 @@ class TelegramPostManager:
         print("album_handler Album source_group")
 
         await user.process_message(event)
+
+        # add user to db
+        telegram_user = await event.get_sender()
+        self.db.ensure_user(telegram_user)
+
         await self.reset_attributes(user)
 
         print("Bottom of the handle_new_album_on_source_group function!!!")
@@ -216,10 +226,20 @@ class TelegramPostManager:
 
         # Get User ID
         user_id = event.forward.from_id.user_id
+        user_db = self.db.get_user(user_id)
         text = (
-            "✨ <b>Welcome!</b>\n"
-            "I'm alive and glowing.\n\n"
-            "Choose what you want to do next 👇"
+            "🛂 <b>Moderation Required</b>\n"
+            "This post has been forwarded to the moderation group.\n"
+            "Please choose an action below:\n"
+            "🟢 Approve, 🔴 Reject\n"
+            "\n<b>User's posts counter</b>\n" 
+            "approved = " + str(user_db["approved_posts"]) + " | "
+            "rejected = " + str(user_db["rejected_posts"]) + "\n"
+            "\n<b>User stats</b>\n" 
+            "warns = " + str(user_db["warn_count"]) + " | "
+            "kicks = " + str(user_db["kick_count"]) + " | "
+            "mutes = " + str(user_db["mute_count"]) + " | "
+            "bans = " + str(user_db["ban_count"]) + ""
         )
         # Build chat and message ids
         try:
@@ -239,16 +259,16 @@ class TelegramPostManager:
         # Build inline keyboard
         keyboard = [
             [
-                Button.inline("✅ Approve", f"approve:{message_id}:{message_type}".encode()),
-                Button.inline("🚫 Reject", f"reject:{message_id}:{message_type}".encode())
+                Button.inline("✅ Approve post", f"approve:{message_id}:{message_type}".encode()),
+                Button.inline("🚫 Reject post", f"reject:{message_id}:{message_type}".encode())
             ],
             [
-                Button.inline("🚫 Ban", f"ban:{user_id}:{message_id}".encode()),
-                Button.inline("🔇 Mute", f"mute:{user_id}:{message_id}".encode())
+                Button.inline("🚫 Ban user", f"ban:{user_id}:{message_id}".encode()),
+                Button.inline("🔇 Mute user", f"mute:{user_id}:{message_id}".encode())
             ],
             [
-                Button.inline("⚠ Warn", f"warn:{user_id}:{message_id}".encode()),
-                Button.inline("👢 Kick", f"kick:{user_id}:{message_id}".encode())
+                Button.inline("⚠ Warn user", f"warn:{user_id}:{message_id}".encode()),
+                Button.inline("👢 Kick user", f"kick:{user_id}:{message_id}".encode())
             ],
         ]
 
@@ -282,13 +302,6 @@ class TelegramPostManager:
         # "approve" button logic
         if action == "approve":
             # Edit original message text + remove buttons
-            """await event.edit(
-                "✅ <b>Approved!</b>\n"
-                "Action has been registered successfully.",
-                buttons=None,
-                parse_mode="html"
-            )"""
-
             await self.show_action_notification(event,"✅ <b>Approved!</b>\n",
                                                 "Post has been registered successfully.")
 
@@ -309,6 +322,8 @@ class TelegramPostManager:
                 from_peer=self.backup_group
             )
 
+            self.db.increment(user_id, "approved_posts")
+
         # "reject" button logic
         elif action == "reject":
             # Show action notification
@@ -324,8 +339,10 @@ class TelegramPostManager:
 
             #await user_event.delete()
 
+            self.db.increment(user_id, "rejected_posts")
+
         elif action == "warn":
-            await self.user_client.send_message(              user_id,
+            await self.user_client.send_message(user_id,
                 (
                     f"⚠ <b>Warning from the admins of the '{event.chat.title}' group</b>\n\n"
 
@@ -342,6 +359,9 @@ class TelegramPostManager:
             await self.show_action_notification(event,"⚠ <b>Warning .</b>\n",
                                                 "DM Warning has been sent to user .")
 
+            self.db.increment(user_id, "warn_count")
+            #self.db.set_state(user_id, "warned")
+
         elif action == "kick":
             try:
                 # Kick the user one time
@@ -357,6 +377,9 @@ class TelegramPostManager:
                                                     "Failed to kick user .")
                 return
 
+            self.db.increment(user_id, "kick_count")
+            self.db.set_state(user_id, "kicked")
+
         elif action == "mute":
             await self.user_client.edit_permissions(
                 self.source_group,
@@ -365,6 +388,9 @@ class TelegramPostManager:
             )
             await self.show_action_notification(event,"⚠ <b>User Muted .</b>\n",
                                                 "User has been muted .")
+
+            self.db.increment(user_id, "mute_count")
+            self.db.set_state(user_id, "muted")
 
         elif action == "ban":
             await self.user_client.edit_permissions(
@@ -383,6 +409,9 @@ class TelegramPostManager:
 
             await self.show_action_notification(event,"❌ <b>User banned.</b>\n",
                                                 "User has been banned.")
+
+            self.db.increment(user_id, "ban_count")
+            self.db.set_state(user_id, "banned")
 
         # "more" button logic
 
@@ -404,6 +433,28 @@ class TelegramPostManager:
 
         # Delete message notification
         await event.delete()
+
+    def build_user_stats_table(self, user):
+        # user is a dict returned from your database
+
+        approved = str(user["approved_posts"])
+        rejected = str(user["rejected_posts"])
+        warns = str(user["warn_count"])
+        kicks = str(user["kick_count"])
+        mutes = str(user["mute_count"])
+        bans = str(user["ban_count"])
+        state = str(user["actual_state"])
+
+        table = f"""
+                <pre>
+                ┌──────────────┬──────────────┬──────────────┬─────────┬─────────┬─────────┬─────────┬────────────┐
+                │ Field        │ Approved     │ Rejected     │ Warns   │ Kicks   │ Mutes   │ Bans    │ State      │
+                ├──────────────┼──────────────┼──────────────┼─────────┼─────────┼─────────┼─────────┼────────────┤
+                │ User Stats   │ {approved:^12} │ {rejected:^12} │ {warns:^7} │ {kicks:^7} │ {mutes:^7} │ {bans:^7} │ {state:^10} │
+                └──────────────┴──────────────┴──────────────┴─────────┴─────────┴─────────┴─────────┴────────────┘
+                </pre>
+            """
+        return table
 
     async def show_action_notification(self, event, title, text):
         await event.edit(
