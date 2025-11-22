@@ -2,6 +2,7 @@ import asyncio
 from collections import defaultdict
 from telethon.tl.types import Message
 from constants import *
+from userdb import UserDB
 from utils import Utils
 
 
@@ -28,6 +29,7 @@ class ContentModerator:
         self.start_time_on_source = -1
         self.is_album_on_backup = False
         self.start_time_on_backup = -1
+        self.db = UserDB()
 
     async def process_message(self, event):
         print("def process_message")
@@ -68,7 +70,9 @@ class ContentModerator:
                     #print(str(p.id) + " IS NOT AN ADMIN")
                     break
 
-
+            # Check if user poster trusted by admin
+            if self.db.get_user(user_id, "trust")["trust"] == "trusted":
+                return
             #is_admin = any(p.id == user_id and p.is_admin for p in participants)
             # If the poster is an admin then don't forward album to backup moderation group
 

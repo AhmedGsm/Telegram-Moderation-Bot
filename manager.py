@@ -6,8 +6,7 @@ from collections import defaultdict
 
 from telethon import TelegramClient, events, Button
 
-from constants import SINGLE_MESSAGE_DETECTION_TIMEOUT, NOTIFICATION_NO_DIRECT_POSTING_IN_BACKUP_GROUP, \
-    DELETE_NOTIFICATION_DELAY
+from constants import *
 from moderator import ContentModerator
 from userdb import UserDB
 from utils import Utils
@@ -228,11 +227,7 @@ class TelegramPostManager:
         user_id = event.forward.from_id.user_id
         user_db = self.db.get_user(user_id)
         text = (
-            "🛂 <b>Moderation Required</b>\n"
-            "This post has been forwarded to the moderation group.\n"
-            "Please choose an action below:\n"
-            "🟢 Approve, 🔴 Reject\n"
-            "\n<b>User's posts counter</b>\n" 
+            FOOTER_MODERATION_MESSAGE +
             "approved = " + str(user_db["approved_posts"]) + " | "
             "rejected = " + str(user_db["rejected_posts"]) + "\n"
             "\n<b>User stats</b>\n" 
@@ -263,12 +258,15 @@ class TelegramPostManager:
                 Button.inline("🚫 Reject post", f"reject:{message_id}:{message_type}".encode())
             ],
             [
-                Button.inline("🚫 Ban user", f"ban:{user_id}:{message_id}".encode()),
+                Button.inline("⚠ Warn user", f"warn:{user_id}:{message_id}".encode()),
                 Button.inline("🔇 Mute user", f"mute:{user_id}:{message_id}".encode())
             ],
             [
-                Button.inline("⚠ Warn user", f"warn:{user_id}:{message_id}".encode()),
-                Button.inline("👢 Kick user", f"kick:{user_id}:{message_id}".encode())
+                Button.inline("👢 Kick user", f"kick:{user_id}:{message_id}".encode()),
+                Button.inline("🚫 Ban user", f"ban:{user_id}:{message_id}".encode())
+            ],
+            [
+                Button.inline("🎖 Trust User", f"trust_user:{message_id}:{message_type}".encode())
             ],
         ]
 
@@ -306,7 +304,6 @@ class TelegramPostManager:
                                                 "Post has been registered successfully.")
 
             # Optional popup
-            await event.answer("Approved ✔", alert=True)
 
             # Resend the post to the original Group
             if message_type == "message":
@@ -333,25 +330,19 @@ class TelegramPostManager:
             # Send DM message notification
             await self.user_client.send_message(
                 user_id,
-                f"❌ <b>{event.chat.title}:</b>\n\n Your post is rejected by admins, please follow group rules.",
+                f"❌ <b>{event.chat.title}:</b>\n\n Your post is rejected by the admins. Please follow group rules.",
                 parse_mode="html"
             )
 
-            #await user_event.delete()
-
             self.db.increment(user_id, "rejected_posts")
 
+        elif action == "trust_user":
+            self.db.update_entry(user_id, "trust", "trusted")
+            await self.show_action_notification(event,"👍 <b>Trust updated .</b>\n",
+                                                "User trusted now and he can post without verification!")
         elif action == "warn":
             await self.user_client.send_message(user_id,
-                (
-                    f"⚠ <b>Warning from the admins of the '{event.chat.title}' group</b>\n\n"
-
-                    "You have received this warning because you shared a message "
-                    "that does not respect the rules of the group "
-                    "(for example: spam, advertising, offensive language, or inappropriate media).\n\n"
-                    "Please make sure your next messages follow the rules. "
-                    "Repeated violations may lead to a mute, kick, or ban."
-                ),
+                f"<i>{self.source_group}</i> group:" + WARNING_MESSAGE,
                 parse_mode="html"
             )
 
@@ -371,9 +362,12 @@ class TelegramPostManager:
                 await self.show_action_notification(event, "❌ <b>User Kicked .</b>\n",
                                                     "User has been kicked .")
 
+                # Send DM message
+                # Send kick DM message
+                await self.user_client.send_message(user_id, f"<i>{self.source_group}</i> group:" + KICK_MESSAGE, parse_mode="html")
+
             except Exception as e:
-                await event.answer(f"Kick failed: {e}", alert=True)
-                await self.show_action_notification(event, "❌ <b>User Kicked .</b>\n",
+                await self.show_action_notification(event, "❌ <b>User Kick .</b>\n",
                                                     "Failed to kick user .")
                 return
 
@@ -405,10 +399,13 @@ class TelegramPostManager:
                 send_messages=True
             )
             """
-            #await event.answer("User has been banned 🚫", alert=True)
 
             await self.show_action_notification(event,"❌ <b>User banned.</b>\n",
                                                 "User has been banned.")
+            # Send DM message
+
+            # Send kick DM message
+            await self.user_client.send_message(user_id, f"<i>{self.source_group}</i> group:" + BAN_MESSAGE, parse_mode="html")
 
             self.db.increment(user_id, "ban_count")
             self.db.set_state(user_id, "banned")
@@ -433,28 +430,6 @@ class TelegramPostManager:
 
         # Delete message notification
         await event.delete()
-
-    def build_user_stats_table(self, user):
-        # user is a dict returned from your database
-
-        approved = str(user["approved_posts"])
-        rejected = str(user["rejected_posts"])
-        warns = str(user["warn_count"])
-        kicks = str(user["kick_count"])
-        mutes = str(user["mute_count"])
-        bans = str(user["ban_count"])
-        state = str(user["actual_state"])
-
-        table = f"""
-                <pre>
-                ┌──────────────┬──────────────┬──────────────┬─────────┬─────────┬─────────┬─────────┬────────────┐
-                │ Field        │ Approved     │ Rejected     │ Warns   │ Kicks   │ Mutes   │ Bans    │ State      │
-                ├──────────────┼──────────────┼──────────────┼─────────┼─────────┼─────────┼─────────┼────────────┤
-                │ User Stats   │ {approved:^12} │ {rejected:^12} │ {warns:^7} │ {kicks:^7} │ {mutes:^7} │ {bans:^7} │ {state:^10} │
-                └──────────────┴──────────────┴──────────────┴─────────┴─────────┴─────────┴─────────┴────────────┘
-                </pre>
-            """
-        return table
 
     async def show_action_notification(self, event, title, text):
         await event.edit(
