@@ -9,9 +9,7 @@ import asyncio
 import secrets
 import subprocess
 from flask import redirect, url_for
-
 from utils import Utils
-
 
 class Setup:
     @staticmethod
@@ -39,12 +37,12 @@ class Setup:
         session_file = f"{username}.session"
         if os.path.exists(session_file):
             os.remove(session_file)
-            print(f"Deleted previous session file: {session_file}")
+
         # Also delete any previous session-journal file
         session_journal_file = f"{username}.session-journal"
         if os.path.exists(session_journal_file):
             os.remove(session_journal_file)
-            print(f"Deleted previous session journal file: {session_journal_file}")
+
         # Clear any existing session data
         session.clear()
 
@@ -214,43 +212,6 @@ def verify_code():
         # PROPERLY DISCONNECT before returning
         if client and client.is_connected():
             client.disconnect()
-
-"""
-@app.route('/verify_password', methods=['POST'])
-def verify_password():
-    try:
-        data = request.json
-        password = data['password']
-
-        # Run the Telethon code in an event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        # Recreate client from session
-        client = TelegramClient(session['session_name'], session['api_id'], session['api_id'])
-
-        # Connect the client
-        client.connect()
-
-        # Sign in with the password
-        client.sign_in(password=password)
-
-        # Get all dialogs
-        groups = []
-        dialogs = client.get_dialogs()
-        for dialog in dialogs:
-            if dialog.is_group or dialog.is_channel:
-                groups.append({
-                    'name': dialog.name,
-                    'id': dialog.id,
-                    'type': 'Channel' if dialog.is_channel else 'Group'
-                })
-
-        client.disconnect()
-        return jsonify({'status': 'success', 'groups': groups})
-
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})"""
 
 @app.route('/validate_2fa', methods=['POST'])
 def validate_2fa():

@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import logging
 
 class Utils:
     @staticmethod
@@ -42,15 +43,26 @@ class Utils:
             # Delete notification safely
             try:
                 await client.delete_messages(source_group, notification.id)
-                print("[NotifyUser] Notification deleted.")
             except Exception as e:
-                print(f"[NotifyUser] Couldn't delete notification: {e}")
+                Utils.create_logger().error(f"utils.py on line 47: Couldn't delete notification: {e}")
 
         except Exception as e:
-            print(f"[NotifyUser] Error when sending notification: {e}")
+            Utils.create_logger().error(f"utils.py on line 50: Couldn't delete notification: {e}")
 
     @staticmethod
     def hash_session_name(admin_id, prefix):
         return "_".join([prefix,
                          hashlib.md5(str(admin_id).encode()).hexdigest()])
+
+    @staticmethod
+    def create_logger():
+        logging.basicConfig(
+            level=logging.ERROR,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            handlers=[
+                logging.FileHandler("bot.log", encoding="utf-8"),
+                logging.StreamHandler()
+            ]
+        )
+        return logging.getLogger("BotLogger")
 

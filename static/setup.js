@@ -250,8 +250,13 @@ function getFormData() {
         }
         else if (data.status === 'code_required') {
           showMessage(data.message, 'success');
+
           // Display code introduction dialog
           dialog_overlay.style.display = "block";
+
+          // Hide 2fa code introduction input
+          twoFaAuthPasswordInput = document.getElementById('2fa-password');
+          twoFaAuthPasswordInput.style.display = "none";
 
           // Access elements DOM
           codeVerificationForm = document.getElementById('verification-form');
@@ -314,7 +319,6 @@ function getFormData() {
         const codeLabel = document.getElementById('code-label');
         const codeDefinition = document.getElementById('code-login-definition');
         const codeContainer = document.querySelector(".code-input-container");
-        const twoFaAuthPasswordInput = document.getElementById('2fa-password');
         const code = document.getElementById('full-code')?.value;
 
         if (!code) {
@@ -361,11 +365,10 @@ function getFormData() {
               // Display success fetching message
               showMessage('Groups fetched successfully.',  'success')
               // showMessageVerificationCode('Groups fetched successfully.', 'success');
-            } else {
+            }
+            
+            else {
               
-              // Hide 2fa input field
-              // twoFaAuthPasswordInput.style.display = "none";
-
               // Check if user activated 2FA in his TG account
               if (data["2fa_required"] !== undefined) {
                 // Update 2fa state condition

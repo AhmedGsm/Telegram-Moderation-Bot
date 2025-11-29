@@ -27,7 +27,7 @@ if __name__ == "__main__":
     async def run_all():
         # Run both manager and main() concurrently
         await asyncio.gather(
-            manager.start()  # your aiogram or other async function
+            manager.start()
         )
 
     asyncio.run(run_all())

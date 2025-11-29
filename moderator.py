@@ -1,14 +1,12 @@
 import asyncio
 from collections import defaultdict
-from telethon.tl.types import Message
 from constants import *
 from userdb import UserDB
 from utils import Utils
 
-
 class ContentModerator:
     def __init__(self, client, source_group, backup_group, admin_id):
-        self.pending_albums = {}  # Track album groupings
+        self.pending_albums = {}
         self.user_id = -1000
         self.source_group = source_group
         self.backup_group = backup_group
@@ -32,7 +30,6 @@ class ContentModerator:
         self.db = UserDB()
 
     async def process_message(self, event):
-        print("def process_message")
         # Check if the event is a single message or part of an album
         event_message = None
         try:
@@ -48,10 +45,6 @@ class ContentModerator:
             # Ignore service messages and bot commands
             if not event_message.message and not event_message.media:
                 return
-
-            # Handle media albums
-            # Forward only non admin messages
-
             # Retrieve user ID
             user_id = event_message.sender.id
 
@@ -67,14 +60,11 @@ class ContentModerator:
                         pass
                     return
                 except:
-                    #print(str(p.id) + " IS NOT AN ADMIN")
                     break
 
             # Check if user poster trusted by admin
             if self.db.get_user(user_id, "trust")["trust"] == "trusted":
                 return
-            #is_admin = any(p.id == user_id and p.is_admin for p in participants)
-            # If the poster is an admin then don't forward album to backup moderation group
 
             await self.client.forward_messages(
                 entity=self.backup_group,
@@ -82,36 +72,14 @@ class ContentModerator:
                 from_peer=self.source_group
             )
 
-            print("Album forwarded (self.client.forward_messages)")
             await self.delete_post_and_notify(event)
 
         except Exception as e:
-            print(f"Error processing message: {e}")
+            Utils.create_logger().error(f"moderator.py on line 78: Error processing message: {e}")
 
 
     async def delete_post_and_notify(self, event):
         # Delete all album parts
         await event.delete()
-        #await self.client.delete_messages(self.source_group, [msg.id for msg in album])
         # Send notification
-        #await self.notify_user(event, self.notification_message)
         await Utils.notify_user(self.client, self.source_group, event, self.notification_message, DELETE_NOTIFICATION_DELAY)
-
-    async def notify_user(self, event, message):
-        """Notify user about hidden post"""
-        sender = await event.get_sender()
-        username = sender.username or sender.first_name
-        notification = await self.client.send_message(
-            self.source_group,
-            f"@{username} {message}",
-            reply_to=event.message.reply_to_msg_id
-        )
-        # Wait 5 seconds (or 10 if you prefer)
-        await asyncio.sleep(DELETE_NOTIFICATION_DELAY)
-
-        # Delete the notification message
-        try:
-            await self.client.delete_messages(self.source_group, [notification.id])
-            print("Message notification deleted!!")
-        except Exception as e:
-            print(f"Failed to delete notification: {e}")

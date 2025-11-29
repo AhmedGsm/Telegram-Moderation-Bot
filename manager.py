@@ -1,16 +1,12 @@
 import asyncio
-
 import json
 import time
 from collections import defaultdict
-
 from telethon import TelegramClient, events, Button
-
 from constants import *
 from moderator import ContentModerator
 from userdb import UserDB
 from utils import Utils
-
 
 class TelegramPostManager:
     def __init__(self, api_id, api_hash, bot_token, source_group, backup_group, admin_id):
@@ -38,7 +34,6 @@ class TelegramPostManager:
     async def fetch_users_from_group(self, group_id, limit):
         # Start the client to fetch group messages
         # Generate a unique session name by hashing the admin_id
-
 
         self.user_client = TelegramClient(Utils.hash_session_name(self.admin_id, "user"),
                                               self.api_id, self.api_hash)
@@ -81,7 +76,6 @@ class TelegramPostManager:
             is_album_attr = "is_album_on_backup"
             start_attr = "start_time_on_backup"
         else:
-            print("Unknown group name -- Filtering single message detection")
             return
 
         # get current values dynamically
@@ -96,7 +90,6 @@ class TelegramPostManager:
             setattr(user, start_attr, time.time())
         else:
             diff = time.time() - start_time
-            print(f"Diff between 2 msgs: {diff:.2f}s")
             if diff < SINGLE_MESSAGE_DETECTION_TIMEOUT:
                 setattr(user, is_album_attr, True)
                 return -1
@@ -107,26 +100,14 @@ class TelegramPostManager:
 
         if getattr(user, is_album_attr):
             return -1
-
-        """setattr(user, is_album_attr, False)
-        setattr(user, start_attr, -1)"""
         return 0
 
     async def handle_new_message_on_source_group(self, event):
-        print(f"handle_new_message_on_source_group Event type: {type(event)}")
 
         user = await self.get_sender(event, self.client)
 
         if await self.filter_single_message_detection(user, "source") == -1:
             return
-
-        """actual_time = time.time()
-        time_between_messages = actual_time - self.previous_time
-        if time_between_messages <= self.time_2_message:
-            return
-        print("Time elapsed: " + str(time_between_messages))
-        self.previous_time = actual_time"""
-
 
         await user.process_message(event)
 
@@ -140,17 +121,13 @@ class TelegramPostManager:
     async def handle_new_message_on_backup_group(self, event):
 
         await asyncio.sleep(0.2)
-        print(f"handle_new_message_on_backup_group Event type: {type(event)}")
 
         if event.message.from_id.user_id != self.bot_id:
-
-        #if not event.message.from_id.user_id == self.bot_id: #or
 
             # Delete notification after moments
             await event.delete()
 
             # No posting allowed notification
-            print(NOTIFICATION_NO_DIRECT_POSTING_IN_BACKUP_GROUP)
             await Utils.notify_user(self.client, self.backup_group, event,
                                     NOTIFICATION_NO_DIRECT_POSTING_IN_BACKUP_GROUP,
                                     DELETE_NOTIFICATION_DELAY)
@@ -160,27 +137,17 @@ class TelegramPostManager:
         # If the message is not forwarded from the source group then don't display notification
         if not event.message.forward:
             return
-        """if event.message.forward:
-            pass
-        if not event.message.fwd_from:
-            print("Direct message not allowed in the backup group, only bot allowed to forward!")
-            return"""
 
         user = await self.get_sender(event, self.client)
-
         if await self.filter_single_message_detection(user, "backup") == -1:
             return
 
         await self.show_notification_menu(event)
-
         await self.reset_attributes(user)
 
     async def handle_new_album_on_source_group(self, event):
         user = await self.get_sender(event, self.client)
-        print(" ".join(["Album detected within" , str(time.time() - user.start_time_on_source), "seconds"]))
         user.is_album_on_source = True
-        print("album_handler Album source_group")
-
         await user.process_message(event)
 
         # add user to db
@@ -189,8 +156,6 @@ class TelegramPostManager:
 
         await self.reset_attributes(user)
 
-        print("Bottom of the handle_new_album_on_source_group function!!!")
-
     async def reset_attributes(self, user):
         user.is_album_on_source = False
         user.start_time_on_source = -1
@@ -198,31 +163,20 @@ class TelegramPostManager:
         user.start_time_on_backup = -1
 
     async def handle_new_album_on_backup_group(self, event):
-        print("Program Starts asyncio.sleep(0.2)")
         await asyncio.sleep(0.2)
-        #print(f"handle_new_album_on_backup_group Event type: {type(event)}")
         if not event.messages[0].forward:
-            print(f"Direct message detected, skipping.")
             return  # Skip processing forwarded messages
 
-
-        print("user = await self.get_sender(event, self.client)")
         user = await self.get_sender(event, self.client)
         if not self.is_notification_shown:
-            print("self.is_notification_shown = True")
             self.is_notification_shown = True
-            print("await self.show_notification_menu(event)")
             await self.show_notification_menu(event)
             return
-        print("await self.reset_attributes(user)")
         await self.reset_attributes(user)
-        print("self.is_notification_shown = False")
         await asyncio.sleep(0)
         self.is_notification_shown = False
 
-
     async def show_notification_menu(self, event):
-
         # Get User ID
         user_id = event.forward.from_id.user_id
         user_db = self.db.get_user(user_id)
@@ -270,13 +224,6 @@ class TelegramPostManager:
             ],
         ]
 
-        # Display notification
-        """await event.respond(
-            text,
-            buttons=keyboard,
-            parse_mode="html"
-        )"""
-
         # Send the notification with buttons
         await self.client.send_message(
             self.backup_group,  # Can be chat ID, username, or entity
@@ -287,7 +234,6 @@ class TelegramPostManager:
 
     @events.register(events.CallbackQuery)
     async def callback_handler(self, event):
-        #print(f"callback_handler Event type: {type(event)}")
         data = event.data.decode("utf-8")
         # Album Event
         album_event = self.album_event
@@ -302,8 +248,6 @@ class TelegramPostManager:
             # Edit original message text + remove buttons
             await self.show_action_notification(event,"✅ <b>Approved!</b>\n",
                                                 "Post has been registered successfully.")
-
-            # Optional popup
 
             # Resend the post to the original Group
             if message_type == "message":
@@ -347,11 +291,10 @@ class TelegramPostManager:
             )
 
             # Display warning notification
-            await self.show_action_notification(event,"⚠ <b>Warning .</b>\n",
+            await self.show_action_notification(event, "⚠ <b>Warning .</b>\n",
                                                 "DM Warning has been sent to user .")
 
             self.db.increment(user_id, "warn_count")
-            #self.db.set_state(user_id, "warned")
 
         elif action == "kick":
             try:
@@ -364,7 +307,8 @@ class TelegramPostManager:
 
                 # Send DM message
                 # Send kick DM message
-                await self.user_client.send_message(user_id, f"<i>{self.source_group}</i> group:" + KICK_MESSAGE, parse_mode="html")
+                await self.user_client.send_message(user_id, f"<i>{self.source_group}</i> group:" + KICK_MESSAGE,
+                                                    parse_mode="html")
 
             except Exception as e:
                 await self.show_action_notification(event, "❌ <b>User Kick .</b>\n",
@@ -380,7 +324,7 @@ class TelegramPostManager:
                 user_id,
                 send_messages=False
             )
-            await self.show_action_notification(event,"⚠ <b>User Muted .</b>\n",
+            await self.show_action_notification(event, "⚠ <b>User Muted .</b>\n",
                                                 "User has been muted .")
 
             self.db.increment(user_id, "mute_count")
@@ -391,26 +335,14 @@ class TelegramPostManager:
                 self.source_group,
                 user_id,
                 view_messages=False)
-            """
-            await self.user_client.edit_permissions(
-                self.source_group,
-                8324555069,
-                view_messages=True,
-                send_messages=True
-            )
-            """
 
-            await self.show_action_notification(event,"❌ <b>User banned.</b>\n",
+            await self.show_action_notification(event, "❌ <b>User banned.</b>\n",
                                                 "User has been banned.")
-            # Send DM message
-
             # Send kick DM message
             await self.user_client.send_message(user_id, f"<i>{self.source_group}</i> group:" + BAN_MESSAGE, parse_mode="html")
 
             self.db.increment(user_id, "ban_count")
             self.db.set_state(user_id, "banned")
-
-        # "more" button logic
 
         # Delete user message if it is rejected!
         # If it is an Album
@@ -439,19 +371,16 @@ class TelegramPostManager:
         )
 
     async def start(self):
-
         await self.client.start(bot_token=self.bot_token)
         self.bot_id = (await self.client.get_me()).id
         await self.fetch_users_from_group(self.backup_group, 1000)
-        print("Bot started successfully")
-
         # Register handlers
         self.user_client.add_event_handler(self.handle_new_album_on_source_group,
                                            events.Album(chats=self.source_group))
         self.user_client.add_event_handler(self.handle_new_message_on_source_group,
                                       events.NewMessage(chats=self.source_group))
         self.user_client.add_event_handler(self.handle_new_message_on_backup_group,
-                                      events.NewMessage(chats=self.backup_group)) #, forwards=True
+                                      events.NewMessage(chats=self.backup_group))
         self.user_client.add_event_handler(self.handle_new_album_on_backup_group,
                                            events.Album(chats=self.backup_group))
         self.client.add_event_handler(self.callback_handler)
