@@ -32,33 +32,24 @@ class Setup:
             return f.read().strip()
 
     @staticmethod
-    def clear_session(username):
-        # Delete previous session file if it exists
-        session_file = f"{username}.session"
-        if os.path.exists(session_file):
-            os.remove(session_file)
-
-        # Also delete any previous session-journal file
-        session_journal_file = f"{username}.session-journal"
-        if os.path.exists(session_journal_file):
-            os.remove(session_journal_file)
-
-        # Clear any existing session data
-        session.clear()
-
-    @staticmethod
-    def fetch_groups( client):
-        # Get all dialogs
+    def fetch_groups(client):
         groups = []
         dialogs = client.get_dialogs()
+
         for dialog in dialogs:
+            entity = dialog.entity
+
+            # Only process Groups or Channels
             if dialog.is_group or dialog.is_channel:
-                groups.append({
-                    'name': dialog.name,
-                    'id': dialog.id,
-                    'type': 'Channel' if dialog.is_channel else 'Group'
-                })
-        #client.disconnect()
+
+                # Check if the logged-in user is the creator
+                if hasattr(entity, 'creator') and entity.creator:
+                    groups.append({
+                        'name': dialog.name,
+                        'id': dialog.id,
+                        'type': 'Channel' if dialog.is_channel else 'Group'
+                    })
+
         return groups
 
 app = Flask(__name__)

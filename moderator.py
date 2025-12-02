@@ -75,7 +75,7 @@ class ContentModerator:
             await self.delete_post_and_notify(event)
 
         except Exception as e:
-            Utils.create_logger().error(f"moderator.py on line 78: Error processing message: {e}")
+            Utils.create_logger().error(f"{ERROR_PROCESSING_MESSAGE} {e}")
 
 
     async def delete_post_and_notify(self, event):

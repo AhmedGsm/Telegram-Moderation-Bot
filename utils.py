@@ -1,8 +1,50 @@
 import asyncio
 import hashlib
+import os
 import logging
 
 class Utils:
+
+    @staticmethod
+    def hash_session_name(admin_id, prefix):
+        return "_".join([prefix,
+                         hashlib.md5(str(admin_id).encode()).hexdigest()])
+
+    """@staticmethod
+    def clear_session(admin_id, prefix):
+        # Delete previous session file if it exists
+        session_file = f"{Utils.hash_session_name(admin_id, prefix)}.session"
+        if os.path.exists(session_file):
+            os.remove(session_file)
+
+        # Also delete any previous session-journal file
+        session_journal_file = f"{Utils.hash_session_name(admin_id, prefix)}.session-journal"
+        if os.path.exists(session_journal_file):
+            os.remove(session_journal_file)
+
+        # Clear any existing session data
+        session.clear()"""
+
+    @staticmethod
+    def clear_all_sessions():
+        # Get the current directory
+        current_dir = os.getcwd()
+
+        # Loop through files in the directory
+        for file_name in os.listdir(current_dir):
+            # Check if the file ends with .session or starts with session_journal
+            if file_name.endswith('.session') or file_name.startswith('session_journal'):
+                try:
+                    # Construct full file path
+                    file_path = os.path.join(current_dir, file_name)
+                    # Remove the session file
+                    os.remove(file_path)
+
+                except Exception as e:
+                    Utils.create_logger().error(f"Utils.py on line 44: Error deleting session files {file_name}: {e}")
+
+
+
     @staticmethod
     async def notify_user(client, source_group, event, message, delay):
         """
@@ -49,10 +91,6 @@ class Utils:
         except Exception as e:
             Utils.create_logger().error(f"utils.py on line 50: Couldn't delete notification: {e}")
 
-    @staticmethod
-    def hash_session_name(admin_id, prefix):
-        return "_".join([prefix,
-                         hashlib.md5(str(admin_id).encode()).hexdigest()])
 
     @staticmethod
     def create_logger():

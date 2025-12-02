@@ -47,6 +47,16 @@ BAN_MESSAGE = (
     "— but please remain respectful.\n\n"
     "Thank you for your understanding."
 )
+# Manager.py
+NOTIFICATION_POST_APPROVED_SUCCESSFULLY = "Post has been approved successfully."
+ITEM_REJECTED = "The item will not be published."
+POST_REJECTED_MESSAGE = "Your post is rejected by the admins. Please follow group rules."
+USER_TRUSTED_MESSAGE = "User trusted now and he can post without verification!"
+DM_WARNING = "DM Warning has been sent to user."
+USER_KICKED = "User has been kicked."
+USER_MUTED = "User has been muted ."
+USER_BANNED = "User has been banned."
 
-
-
+# Error messages
+ERROR_START_CLIENT = "manager.py on line 377: Error starting the client:"
+ERROR_PROCESSING_MESSAGE = "moderator.py on line 78: Error processing message:"

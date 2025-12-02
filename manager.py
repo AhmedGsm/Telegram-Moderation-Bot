@@ -246,8 +246,8 @@ class TelegramPostManager:
         # "approve" button logic
         if action == "approve":
             # Edit original message text + remove buttons
-            await self.show_action_notification(event,"✅ <b>Approved!</b>\n",
-                                                "Post has been registered successfully.")
+            await self.show_action_notification(event, "✅ <b>Approved!</b>\n",
+                                                NOTIFICATION_POST_APPROVED_SUCCESSFULLY)
 
             # Resend the post to the original Group
             if message_type == "message":
@@ -269,12 +269,12 @@ class TelegramPostManager:
         elif action == "reject":
             # Show action notification
             await self.show_action_notification(event,"❌ <b>Rejected.</b>\n",
-                                                "The item will not be published.")
+                                                ITEM_REJECTED)
 
             # Send DM message notification
             await self.user_client.send_message(
                 user_id,
-                f"❌ <b>{event.chat.title}:</b>\n\n Your post is rejected by the admins. Please follow group rules.",
+                f"❌ <b>{event.chat.title}:</b>\n\n {POST_REJECTED_MESSAGE}",
                 parse_mode="html"
             )
 
@@ -282,8 +282,8 @@ class TelegramPostManager:
 
         elif action == "trust_user":
             self.db.update_entry(user_id, "trust", "trusted")
-            await self.show_action_notification(event,"👍 <b>Trust updated .</b>\n",
-                                                "User trusted now and he can post without verification!")
+            await self.show_action_notification(event, "👍 <b>Trust updated .</b>\n",
+                                                USER_TRUSTED_MESSAGE)
         elif action == "warn":
             await self.user_client.send_message(user_id,
                 f"<i>{self.source_group}</i> group:" + WARNING_MESSAGE,
@@ -292,7 +292,7 @@ class TelegramPostManager:
 
             # Display warning notification
             await self.show_action_notification(event, "⚠ <b>Warning .</b>\n",
-                                                "DM Warning has been sent to user .")
+                                                DM_WARNING)
 
             self.db.increment(user_id, "warn_count")
 
@@ -303,7 +303,7 @@ class TelegramPostManager:
 
                 # Display action notification
                 await self.show_action_notification(event, "❌ <b>User Kicked .</b>\n",
-                                                    "User has been kicked .")
+                                                    USER_KICKED)
 
                 # Send DM message
                 # Send kick DM message
@@ -325,7 +325,7 @@ class TelegramPostManager:
                 send_messages=False
             )
             await self.show_action_notification(event, "⚠ <b>User Muted .</b>\n",
-                                                "User has been muted .")
+                                                USER_MUTED)
 
             self.db.increment(user_id, "mute_count")
             self.db.set_state(user_id, "muted")
@@ -337,7 +337,7 @@ class TelegramPostManager:
                 view_messages=False)
 
             await self.show_action_notification(event, "❌ <b>User banned.</b>\n",
-                                                "User has been banned.")
+                                                USER_BANNED)
             # Send kick DM message
             await self.user_client.send_message(user_id, f"<i>{self.source_group}</i> group:" + BAN_MESSAGE, parse_mode="html")
 
@@ -371,7 +371,14 @@ class TelegramPostManager:
         )
 
     async def start(self):
-        await self.client.start(bot_token=self.bot_token)
+        try:
+            await self.client.start(bot_token=self.bot_token)
+        except Exception as e:
+            # Write error log file
+            Utils.create_logger().error(f"{ERROR_START_CLIENT} {e}")
+            # Terminate the program
+            return
+
         self.bot_id = (await self.client.get_me()).id
         await self.fetch_users_from_group(self.backup_group, 1000)
         # Register handlers
