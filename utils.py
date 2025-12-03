@@ -3,15 +3,15 @@ import hashlib
 import os
 import logging
 
-class Utils:
 
+class Utils:
     @staticmethod
     def hash_session_name(admin_id, prefix):
         return "_".join([prefix,
                          hashlib.md5(str(admin_id).encode()).hexdigest()])
 
-    """@staticmethod
-    def clear_session(admin_id, prefix):
+    @staticmethod
+    def clear_session(admin_id, prefix, session):
         # Delete previous session file if it exists
         session_file = f"{Utils.hash_session_name(admin_id, prefix)}.session"
         if os.path.exists(session_file):
@@ -23,7 +23,7 @@ class Utils:
             os.remove(session_journal_file)
 
         # Clear any existing session data
-        session.clear()"""
+        session.clear()
 
     @staticmethod
     def clear_all_sessions():
@@ -42,8 +42,6 @@ class Utils:
 
                 except Exception as e:
                     Utils.create_logger().error(f"Utils.py on line 44: Error deleting session files {file_name}: {e}")
-
-
 
     @staticmethod
     async def notify_user(client, source_group, event, message, delay):
@@ -69,7 +67,7 @@ class Utils:
             # Try retrieving the original replied message ID
             try:
                 reply_to = event.message.reply_to_msg_id
-            except:
+            except AttributeError:
                 reply_to = None
 
             # Send notification
@@ -91,7 +89,6 @@ class Utils:
         except Exception as e:
             Utils.create_logger().error(f"utils.py on line 50: Couldn't delete notification: {e}")
 
-
     @staticmethod
     def create_logger():
         logging.basicConfig(
@@ -103,4 +100,3 @@ class Utils:
             ]
         )
         return logging.getLogger("BotLogger")
-

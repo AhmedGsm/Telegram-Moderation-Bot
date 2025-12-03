@@ -10,6 +10,8 @@ import secrets
 import subprocess
 from flask import redirect, url_for
 from utils import Utils
+from constants import *
+
 
 class Setup:
     @staticmethod
@@ -52,16 +54,20 @@ class Setup:
 
         return groups
 
+
 app = Flask(__name__)
 app.secret_key = Setup.get_or_create_secret_key()
+
 
 @app.route('/')
 def index():
     return redirect(url_for('features'))
 
+
 @app.route('/features')
 def features():
     return render_template('features.html')
+
 
 @app.route('/setup')
 def setup():
@@ -85,18 +91,16 @@ def save_config():
         with open('config/config.json', 'w') as f:
             json.dump(config, f, indent=4)
 
-        return jsonify({'status': 'success', 'message': 'Congratulations! Your bot was installed successfully. You can now run it by clicking the above button!'})
+        return jsonify({'status': 'success', 'message': BOT_INSTALLED_SUCCESSFULLY})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
 
 @app.route('/setup_session', methods=['POST'])
 def setup_session():
-
+    client = None
     try:
         data = request.json
-        #clear_session(data['username'])
-
         admin_id = int(data['admin_id'])
         api_id = int(data['api_id'])
         api_hash = data['api_hash']
@@ -122,10 +126,8 @@ def setup_session():
 
         if not client.is_user_authorized():
             # Send code request
-            result = client.send_code_request(phone)
+            result = await client.send_code_request(phone)
             session['phone_code_hash'] = result.phone_code_hash
-
-            session['client'] = client.session.save()
 
             # PROPERLY DISCONNECT before returning
             if client.is_connected():
@@ -133,7 +135,7 @@ def setup_session():
 
             return jsonify({
                 'status': 'code_required',
-                'message': 'Verification code sent to your Telegram account. Please enter it below.'
+                'message': TG_VERIFICATION_CODE_SENT
             })
 
         groups = Setup.fetch_groups(client)
@@ -142,13 +144,13 @@ def setup_session():
     except SessionPasswordNeededError:
         return jsonify({
             'status': 'password_required',
-            'message': 'Two-factor authentication is enabled. Please enter your password.'
+            'message': TWO_FA_AUTHENTICATION_ENABLED
         })
 
     except PhoneNumberInvalidError:
         return jsonify({
             'status': 'error',
-            'message': 'The phone number is invalid. Please check it and try again.'
+            'message': PHONE_NUMBER_INVALID
         })
 
     except Exception as e:
@@ -162,7 +164,7 @@ def setup_session():
 
 @app.route('/verify_code', methods=['POST'])
 def verify_code():
-    #client = None
+    client = None
     try:
         data = request.json
         code = data['code']
@@ -184,17 +186,15 @@ def verify_code():
         return jsonify({'status': 'success', 'groups': groups})
 
     except PhoneCodeInvalidError:
-        return jsonify({'status': 'error', 'message': 'Invalid verification code. Please try again.'}), 400
-
+        return jsonify({'status': 'error', 'message': INVALID_VERIFICATION_CODE}), 400
 
     except PhoneCodeExpiredError:
-        return jsonify({'status': 'error', 'message': 'Verification code has expired. Please request a new code.'}), 400
-
+        return jsonify({'status': 'error', 'message': VERIFICATION_CODE_EXPIRED}), 400
 
     except SessionPasswordNeededError:
 
         return jsonify(
-            {'status': 'error', '2fa_required': '2fa', 'message': 'Two-factor authentication is enabled. Please provide your password.'}), 400
+            {'status': 'error', '2fa_required': '2fa', 'message': TWO_FACTOR_ENABLED}), 400
 
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}), 500
@@ -204,8 +204,10 @@ def verify_code():
         if client and client.is_connected():
             client.disconnect()
 
+
 @app.route('/validate_2fa', methods=['POST'])
 def validate_2fa():
+    client = None
     try:
         data = request.json
         password = data['password']
@@ -228,30 +230,30 @@ def validate_2fa():
     except PasswordHashInvalidError:
         return jsonify({
             'status': 'error',
-            'message': 'Incorrect password. Please try again.'
+            'message': INCORRECT_PASSWORD
         }), 400
-
     except Exception as e:
-        return jsonify({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}), 500
+        return jsonify({'status': 'error', 'message': f'{UNEXPECTED_ERROR_OCCURRED} {str(e)}'}), 500
 
     finally:
         # Properly disconnect before returning
         if client and client.is_connected():
             client.disconnect()
 
+
 @app.route('/run_bot', methods=['POST'])
 def run_bot():
     try:
         # Launch moderator.py as a subprocess
         subprocess.Popen(["python", "moderator.py"])
-        return jsonify({'status': 'success', 'message': 'Bot is running and start moderation...'})
+        return jsonify({'status': 'success', 'message': MODERATION_IS_RUNNING})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
 
 
 @app.route('/run')
 def run_page():
-    # If config.json doesn’t exist, redirect to setup page
+    # If config.json doesn't exist, redirect to setup page
     if not os.path.exists("config/config.json"):
         return redirect(url_for('no_setup'))
     return render_template('run.html')
@@ -261,10 +263,10 @@ def run_page():
 def no_setup():
     return render_template('no-setup.html')
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     # Ensure the config directory exists
     os.makedirs('config', exist_ok=True)
 
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=os.environ.get('DEBUG', True), use_reloader=False)
+    app.run(host='0.0.0.0', port=port, debug=os.environ.get('DEBUG', False), use_reloader=False)

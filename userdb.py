@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import datetime
 
+
 class UserDB:
     def __init__(self, path="database.db"):
         self.conn = sqlite3.connect(path, check_same_thread=False)
@@ -72,21 +73,21 @@ class UserDB:
         self.conn.execute(query, (state, datetime.now(), user_id))
         self.conn.commit()
 
-
-    def check_db_columns(self, column):
-        ALLOWED_COLUMNS = {
+    @staticmethod
+    def check_db_columns(column):
+        allowed_columns = {
             "*", "id", "username", "first_name", "last_name", "phone",
             "language_code", "is_bot", "last_seen", "trust",
             "approved_posts", "rejected_posts",
             "warn_count", "kick_count", "mute_count", "ban_count",
             "actual_state"
         }
-        if column not in ALLOWED_COLUMNS:
+        if column not in allowed_columns:
             raise ValueError(f"Invalid column name: {column}")
 
     def update_entry(self, user_id, column, value):
         # Protect from SQL injection
-        self.check_db_columns(column)
+        UserDB.check_db_columns(column)
 
         # Update Query
         query = f"""
@@ -99,7 +100,7 @@ class UserDB:
 
     def get_user(self, user_id, column="*"):
         # Protect from SQL injection
-        self.check_db_columns(column)
+        UserDB.check_db_columns(column)
 
         # Build query
         q = f"SELECT {column} FROM users WHERE id = ?"
@@ -111,4 +112,3 @@ class UserDB:
 
         columns = [column[0] for column in cur.description]
         return dict(zip(columns, row))
-
