@@ -1,6 +1,5 @@
 # setup.py
 from flask import Flask, render_template, request, jsonify, session
-import json
 import os
 from telethon.sync import TelegramClient
 from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError, PhoneCodeInvalidError, \
@@ -195,7 +194,7 @@ def verify_code():
             {'status': 'error', '2fa_required': '2fa', 'message': TWO_FACTOR_ENABLED}), 400
 
     except Exception as e:
-        return jsonify({'status': 'error', 'message': f'An unexpected error occurred: {str(e)}'}), 500
+        return jsonify({'status': 'error', 'message': f'{UNEXPECTED_ERROR_OCCURRED} {str(e)}'}), 500
 
     finally:
         # PROPERLY DISCONNECT before returning

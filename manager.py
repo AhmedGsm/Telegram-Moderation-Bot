@@ -14,8 +14,6 @@ class TelegramPostManager:
         self.client = TelegramClient(Utils.hash_session_name(admin_id, "bot"),
                                      api_id, api_hash)
         self.user_client = None
-        with open("config/config.json") as f:
-            self.config = json.load(f)
         self.bot_id = -1
         self.api_id = api_id
         self.api_hash = api_hash

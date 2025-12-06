@@ -69,9 +69,15 @@ TWO_FACTOR_ENABLED = "Two-factor authentication is enabled. Please provide your 
 UNEXPECTED_ERROR_OCCURRED = "An unexpected error occurred:"
 INCORRECT_PASSWORD = "Incorrect password. Please try again."
 MODERATION_IS_RUNNING = "Bot is running and start moderation..."
+CONFIG_FILE_NOT_FOUND = "Please Reinstall your bot"
+CREATE_MANAGER_ERROR = "Error creating manager"
+
 
 # Error messages
 ERROR_START_CLIENT = "manager.py on line 377: Error starting the client:"
 ERROR_PROCESSING_MESSAGE = "moderator.py on line 78: Error processing message:"
 FAILED_KICK_USER = "Failed to kick user ."
 NOT_MESSAGE_ALBUM = "The message type is not a message neither an album"
+DELETE_NOTIFICATION_ERROR_01 = "utils.py on line 47: Couldn't delete notification:"
+DELETE_NOTIFICATION_ERROR_02 = "utils.py on line 50: Couldn't delete notification:"
+DELETE_SESSION_ERROR = "Utils.py on line 44: Error deleting session files"

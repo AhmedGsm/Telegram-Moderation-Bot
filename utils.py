@@ -43,7 +43,7 @@ class Utils:
                     os.remove(file_path)
 
                 except Exception as e:
-                    Utils.create_logger().error(f"Utils.py on line 44: Error deleting session files {file_name}: {e}")
+                    Utils.create_logger().error(f"{DELETE_SESSION_ERROR} {file_name}: {e}")
 
     @staticmethod
     async def notify_user(client, source_group, event, message, delay):
@@ -86,10 +86,10 @@ class Utils:
             try:
                 await client.delete_messages(source_group, notification.id)
             except Exception as e:
-                Utils.create_logger().error(f"utils.py on line 47: Couldn't delete notification: {e}")
+                Utils.create_logger().error(f"{DELETE_NOTIFICATION_ERROR} {e}")
 
         except Exception as e:
-            Utils.create_logger().error(f"utils.py on line 50: Couldn't delete notification: {e}")
+            Utils.create_logger().error(f"{DELETE_NOTIFICATION_ERROR_02} {e}")
 
     @staticmethod
     def create_logger():
