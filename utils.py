@@ -2,6 +2,8 @@ import asyncio
 import hashlib
 import os
 import logging
+import base64
+import json
 
 
 class Utils:
@@ -100,3 +102,19 @@ class Utils:
             ]
         )
         return logging.getLogger("BotLogger")
+
+    @staticmethod
+    def encode_config(config_dict):
+        json_str = json.dumps(config_dict)
+        encoded = base64.b64encode(json_str.encode()).decode()
+        with open('config/config.b64', 'w') as f:
+            f.write(encoded)
+        return encoded
+
+    @staticmethod
+    def decode_config():
+        # Read encoded config
+        with open('config/config.b64', 'r') as f:
+            encoded = f.read()
+        decoded = base64.b64decode(encoded).decode()
+        return json.loads(decoded)

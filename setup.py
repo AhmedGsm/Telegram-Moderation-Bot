@@ -88,9 +88,7 @@ def save_config():
             "PHONE": int(data['phone'])
         }
 
-        with open('config/config.json', 'w') as f:
-            json.dump(config, f, indent=4)
-
+        Utils.encode_config(config)
         return jsonify({'status': 'success', 'message': BOT_INSTALLED_SUCCESSFULLY})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
@@ -126,7 +124,7 @@ def setup_session():
 
         if not client.is_user_authorized():
             # Send code request
-            result = await client.send_code_request(phone)
+            result = client.send_code_request(phone)
             session['phone_code_hash'] = result.phone_code_hash
 
             # PROPERLY DISCONNECT before returning
@@ -245,7 +243,7 @@ def validate_2fa():
 def run_bot():
     try:
         # Launch moderator.py as a subprocess
-        subprocess.Popen(["python", "moderator.py"])
+        subprocess.Popen(["python", "run.py"])
         return jsonify({'status': 'success', 'message': MODERATION_IS_RUNNING})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
@@ -253,8 +251,8 @@ def run_bot():
 
 @app.route('/run')
 def run_page():
-    # If config.json doesn't exist, redirect to setup page
-    if not os.path.exists("config/config.json"):
+    # If config doesn't exist, redirect to setup page
+    if not os.path.exists("config/config.b64"):
         return redirect(url_for('no_setup'))
     return render_template('run.html')
 

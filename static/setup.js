@@ -16,13 +16,12 @@ document.addEventListener('DOMContentLoaded', function () {
   const runBotBtn = document.getElementById('runBotBtn');
   const codeInputs = document.querySelectorAll('.code-input');
   const fullCodeInput = document.getElementById('full-code');
-  const dialog_overlay = document.querySelector('.dialog-overlay');
+  const dialogOverlay = document.querySelector('.dialog-overlay');
   let password2FaRequired = false;
   let codeVerificationForm ;
   let messageContainer;
   let closeBtn ;
   let resendLink ;
-  //const inputs = form.querySelectorAll('input[required]');
   let submitCodeBtn ;
 
 function getFormData() {
@@ -205,6 +204,7 @@ function getFormData() {
           showMessage(data.message, 'success');
           if (registerForm) registerForm.style.display = 'none';
           if (groupsContainer) groupsContainer.style.display = 'none';
+          
           // Show run bot button
           if (runBotButton) runBotButton.style.display = "flex";
         } else {
@@ -252,7 +252,7 @@ function getFormData() {
           showMessage(data.message, 'success');
 
           // Display code introduction dialog
-          dialog_overlay.style.display = "block";
+          dialogOverlay.style.display = "block";
 
           // Hide 2fa code introduction input
           twoFaAuthPasswordInput = document.getElementById('2fa-password');
@@ -267,12 +267,6 @@ function getFormData() {
 
           // Send verification to the Flask App
           sendVerificationCode();
-
-          // Event listener to the form submission
-          //codeVerificationFormEvent();
-
-          // Launch event listeners
-          //setupEvents();
 
         } else {
           showMessage(data.message || 'Failed to fetch groups.', 'error');
@@ -328,7 +322,6 @@ function getFormData() {
 
         try {
           if (password2FaRequired) {
-
                 // Disable password input
                 twoFaAuthPasswordInput.style.enabled = false;
 
@@ -341,7 +334,7 @@ function getFormData() {
                   // Display groups
                   displayGroups(data.groups || []);
                   // Hide the login dialog overlay
-                  dialog_overlay.style.display = "none";
+                  dialogOverlay.style.display = "none";
                   //showMessageVerificationCode('Groups fetched successfully.', 'success');
                   showMessage('Groups fetched successfully.',  'success')
                   
@@ -356,15 +349,14 @@ function getFormData() {
             } else {
             const data = await safeFetch('/verify_code', { code: code });
             if (data.status === 'success') {
-              //showMessageVerificationCode(data.message || 'Login success', 'success');
               // Display groups
               displayGroups(data.groups || []);
+
               // Hide the login dialog overlay
-              dialog_overlay.style.display = "none";
+              dialogOverlay.style.display = "none";
 
               // Display success fetching message
               showMessage('Groups fetched successfully.',  'success')
-              // showMessageVerificationCode('Groups fetched successfully.', 'success');
             }
             
             else {
@@ -546,52 +538,6 @@ function getFormData() {
     submitCodeBtn.disabled = code.length !== 5;
   }
 
-  // Form submission
-  /*function codeVerificationFormEvent() {
-    codeVerificationForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-
-      const code = fullCodeInput.value;
-
-      // Show loading state
-      submitCodeBtn.disabled = true;
-      submitCodeBtn.textContent = 'Verifying...';
-
-      // Send to Flask backend for actual verification
-      fetch('/verify_code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          //'X-CSRFToken': getCSRFToken() // If using CSRF protection
-        },
-        body: JSON.stringify({
-          telegram_code: code
-        })
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            showMessageVerificationCode('Verification successful!', 'success');
-            // Redirect based on server response
-            //showMessageVerificationCode(data.message, 'success');
-            // Hide code verification dialog
-            dialog_overlay.style.display = "none";
-            // Display groups
-            displayGroups(data.groups || []);
-            showMessageVerificationCode('Groups fetched successfully.', 'success');
-          } else {
-            showMessageVerificationCode(data.error || 'Verification failed', 'error');
-            submitCodeBtn.disabled = false;
-            submitCodeBtn.textContent = 'Verify Code';
-          }
-        })
-        .catch(error => {
-          showMessageVerificationCode('Network error. Please try again.', 'error');
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Verify Code';
-        });
-    });
-  }*/
   // Show message in the message container
   function showMessageVerificationCode(message, type) {
     messageContainer.textContent = message;
@@ -608,10 +554,6 @@ function getFormData() {
   function setupEvents() {
     closeBtn.addEventListener('click', function () {
       document.querySelector('.dialog-overlay').style.opacity = '0';
-     /*setTimeout(() => {
-        alert('Dialog closed. In a real application, this would close the overlay.');
-        document.querySelector('.dialog-overlay').style.opacity = '1';
-      }, 300);*/
     });
 
     // Resend code functionality

@@ -1,12 +1,10 @@
 import asyncio
-import json
 from manager import TelegramPostManager
+from utils import Utils
 
 if __name__ == "__main__":
-    # Configuration (use environment variables in production)
-    with open("config/config.json") as f:
-        config = json.load(f)
 
+    config = Utils.decode_config()
     # Extract values
     API_ID = config["TELEGRAM_API_ID"]
     API_HASH = config["TELEGRAM_API_HASH"]
