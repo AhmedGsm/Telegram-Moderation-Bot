@@ -260,7 +260,10 @@ def run_page():
 def no_setup():
     return render_template('no-setup.html')
 
-
+# This block is used only when running the application directly
+# (e.g. `python setup.py`) for local or simple VPS usage.
+# When deployed with a WSGI server (Gunicorn, Railway, etc.),
+# this block is ignored and the server controls the application lifecycle.
 if __name__ == '__main__':
     # Ensure the config directory exists
     os.makedirs('config', exist_ok=True)
