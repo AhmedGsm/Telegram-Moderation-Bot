@@ -20,9 +20,9 @@ document.addEventListener('DOMContentLoaded', function () {
   let password2FaRequired = false;
   let codeVerificationForm ;
   let messageContainer;
-  let closeBtn ;
   let resendLink ;
   let submitCodeBtn ;
+
 
 function getFormData() {
     return {
@@ -220,6 +220,26 @@ function getFormData() {
 
   // List groups
   if (listGroupsBtn) {
+    setupSession();
+  }
+
+  // Run bot
+  if (runBotBtn) {
+    runBotBtn.addEventListener('click', async function () {
+      try {
+        const data = await safeFetch('/run_bot', {});
+        if (data.status === 'success') {
+          showMessage(data.message, 'success');
+        } else {
+          showMessage(data.message || 'Failed to start bot.', 'error');
+        }
+      } catch (e) {
+        showMessage('An error occurred: ' + e.message, 'error');
+      }
+    });
+  }
+
+  async function setupSession() {
     listGroupsBtn.addEventListener('click', async function () {
 
       // Validate before changing UI state
@@ -249,21 +269,24 @@ function getFormData() {
           showMessage('Groups fetched successfully.', 'success');
         }
         else if (data.status === 'code_required') {
-          showMessage(data.message, 'success');
-
-          // Display code introduction dialog
-          dialogOverlay.style.display = "block";
-
-          // Hide 2fa code introduction input
-          twoFaAuthPasswordInput = document.getElementById('2fa-password');
-          twoFaAuthPasswordInput.style.display = "none";
-
+          
           // Access elements DOM
           codeVerificationForm = document.getElementById('verification-form');
           messageContainer = document.querySelector('.message-container');
           submitCodeBtn = document.getElementById('verifyCodeBtn');
           closeBtn = document.querySelector('.close-btn');
           resendLink = document.getElementById('resend-link');
+          showMessageVerificationCode(data.message, 'info');
+
+          // Display code introduction dialog
+          dialogOverlay.style.display = "block";
+
+          // Setup verify code dialog
+          setupEvents()
+
+          // Hide 2fa code introduction input
+          twoFaAuthPasswordInput = document.getElementById('2fa-password');
+          twoFaAuthPasswordInput.style.display = "none";
 
           // Send verification to the Flask App
           sendVerificationCode();
@@ -280,22 +303,6 @@ function getFormData() {
         this.innerHTML = originalContent;
         this.disabled = false;
         setFormEnabled(listForm, true);
-      }
-    });
-  }
-
-  // Run bot
-  if (runBotBtn) {
-    runBotBtn.addEventListener('click', async function () {
-      try {
-        const data = await safeFetch('/run_bot', {});
-        if (data.status === 'success') {
-          showMessage(data.message, 'success');
-        } else {
-          showMessage(data.message || 'Failed to start bot.', 'error');
-        }
-      } catch (e) {
-        showMessage('An error occurred: ' + e.message, 'error');
       }
     });
   }
@@ -335,7 +342,6 @@ function getFormData() {
                   displayGroups(data.groups || []);
                   // Hide the login dialog overlay
                   dialogOverlay.style.display = "none";
-                  //showMessageVerificationCode('Groups fetched successfully.', 'success');
                   showMessage('Groups fetched successfully.',  'success')
                   
                   return
@@ -453,7 +459,7 @@ function getFormData() {
   setupFormValidation();
 
   // Smooth scrolling for anchor links
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  /*document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
       e.preventDefault();
       const target = document.querySelector(this.getAttribute('href'));
@@ -464,7 +470,7 @@ function getFormData() {
         });
       }
     });
-  });
+  });*/
 
   // Add loading states to buttons
   function setButtonLoading(button, isLoading) {
@@ -493,7 +499,7 @@ function getFormData() {
   }
 
   // Update existing buttons to use enhanced loading (optional)
-  if (registerBtn) {
+  /*if (registerBtn) {
     const originalRegisterHandler = registerBtn.onclick;
     registerBtn.onclick = async function () {
       await safeFetchWithLoading('/save_config', formData, registerBtn);
@@ -503,7 +509,7 @@ function getFormData() {
         originalRegisterHandler.call(this);
       }
     };
-  }
+  }*/
 
   // Focus management for code inputs
   codeInputs.forEach((input, index) => {
@@ -552,16 +558,21 @@ function getFormData() {
 
   // Close button functionality
   function setupEvents() {
+  // Access DOM
+  closeBtn = document.querySelector('.close-btn');
+  resendLink = document.querySelector('.resend-link a');
+
     closeBtn.addEventListener('click', function () {
-      document.querySelector('.dialog-overlay').style.opacity = '0';
+      dialogOverlay.style.opacity = '0';
+      showMessage('Verification code dialog closed, please reload the page.', 'info');
     });
 
     // Resend code functionality
     resendLink.addEventListener('click', function (e) {
       e.preventDefault();
+      setupSession();
       showMessageVerificationCode('New verification code sent to your Telegram.', 'info');
 
-      // In a real app, you would make an API call to resend the code
     });
   }
 });

@@ -58,7 +58,7 @@ class TelegramPostManager:
                         forwarder_id,
                         ContentModerator(self.client, self.source_group, self.backup_group, self.admin_id)
                     )
-                    user.albums[grouped_id].append(msg.id)
+                    #user.albums[grouped_id].append(msg.id)
 
     async def get_sender(self, event, client):
         user = self.users.setdefault(
@@ -178,8 +178,8 @@ class TelegramPostManager:
 
     async def show_notification_menu(self, event):
         # Get User ID
-        user_id = event.forward.from_id.user_id
-        user_db = self.db.get_user(user_id)
+        user_poster_id = event.forward.from_id.user_id
+        user_db = self.db.get_user(user_poster_id)
         text = (
                 FOOTER_MODERATION_MESSAGE +
 
@@ -209,19 +209,19 @@ class TelegramPostManager:
         # Build inline keyboard
         keyboard = [
             [
-                Button.inline("✅ Approve post", f"approve:{message_id}:{message_type}".encode()),
-                Button.inline("🚫 Reject post", f"reject:{message_id}:{message_type}".encode())
+                Button.inline("✅ Approve post", f"approve:{user_poster_id}:{message_id}:{message_type}".encode()),
+                Button.inline("🚫 Reject post", f"reject:{user_poster_id}:{message_id}:{message_type}".encode())
             ],
             [
-                Button.inline("⚠ Warn user", f"warn:{user_id}:{message_id}".encode()),
-                Button.inline("🔇 Mute user", f"mute:{user_id}:{message_id}".encode())
+                Button.inline("⚠ Warn user", f"warn:{user_poster_id}:{message_id}:no_message_type".encode()),
+                Button.inline("🔇 Mute user", f"mute:{user_poster_id}:{message_id}:no_message_type".encode())
             ],
             [
-                Button.inline("👢 Kick user", f"kick:{user_id}:{message_id}".encode()),
-                Button.inline("🚫 Ban user", f"ban:{user_id}:{message_id}".encode())
+                Button.inline("👢 Kick user", f"kick:{user_poster_id}:{message_id}:no_message_type".encode()),
+                Button.inline("🚫 Ban user", f"ban:{user_poster_id}:{message_id}:no_message_type".encode())
             ],
             [
-                Button.inline("🎖 Trust User", f"trust_user:{message_id}:{message_type}".encode())
+                Button.inline("🎖 Trust User", f"trust_user:{message_id}:{message_type}:no_message_type".encode())
             ],
         ]
 
@@ -236,9 +236,10 @@ class TelegramPostManager:
     @events.register(events.CallbackQuery)
     async def callback_handler(self, event):
         data = event.data.decode("utf-8")
-        action, message_id, message_type = data.split(":")
+        action, user_id, message_id, message_type = data.split(":")
+        user_id = int(user_id)
+        message_id = int(message_id)
         chat_id = event.chat_id
-        user_id = event.sender_id
         msg_id = int(message_id)
 
         # "approve" button logic
@@ -252,7 +253,8 @@ class TelegramPostManager:
                 messages_ids = [msg_id]
             elif message_type == "album":
                 group_id = msg_id
-                messages_ids = self.users[user_id].albums[group_id]
+                m_user = self.users[user_id]
+                messages_ids = m_user.albums[group_id]
             else:
                 Utils.create_logger().error(NOT_MESSAGE_ALBUM)
                 return
@@ -352,7 +354,7 @@ class TelegramPostManager:
         if message_type == "message":
             await event.client.delete_messages(chat_id, msg_id)
         elif message_type == "album":
-            user = self.users[event.sender_id]
+            user = self.users[user_id]
 
             # Delete images with a loop
             for m_id in user.albums[msg_id]:
@@ -377,6 +379,7 @@ class TelegramPostManager:
     async def start(self):
         try:
             await self.client.start(bot_token=self.bot_token)
+            print("Bot is starting...")
         except Exception as e:
             # Write error log file
             Utils.create_logger().error(f"{ERROR_START_CLIENT} {e}")

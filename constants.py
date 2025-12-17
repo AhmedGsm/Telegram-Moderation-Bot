@@ -1,7 +1,7 @@
 NOTIFICATION_HIDE_FOR_MODERATION = "The post will be reviewed, please wait. Thank you."
 NOTIFICATION_NO_MORE_TEN_IMAGES = " Uploading more than 10 images is not allowed"
 NOTIFICATION_NO_DIRECT_POSTING_IN_BACKUP_GROUP = " Posting in this group is not allowed!"
-DELETE_NOTIFICATION_DELAY = 3
+DELETE_NOTIFICATION_DELAY = 6
 SINGLE_MESSAGE_DETECTION_TIMEOUT = 0.2
 FOOTER_MODERATION_MESSAGE = """🛂 <b>Moderation Required</b>\n
 This post has been forwarded to the moderation group.
@@ -60,7 +60,7 @@ USER_BANNED = "User has been banned."
 # Setup.py
 BOT_INSTALLED_SUCCESSFULLY = f"Congratulations! Your bot was installed successfully. "\
                              "You can now run it by clicking the above button!"
-TG_VERIFICATION_CODE_SENT = "Verification code sent to your Telegram account. Please enter it below."
+TG_VERIFICATION_CODE_SENT = "Verification code sent to your Telegram account. Please enter it above."
 TWO_FA_AUTHENTICATION_ENABLED = "Two-factor authentication is enabled. Please enter your password."
 PHONE_NUMBER_INVALID = "The phone number is invalid. Please check it and try again."
 INVALID_VERIFICATION_CODE = "Invalid verification code. Please try again."
