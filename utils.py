@@ -1,3 +1,5 @@
+"""Shared utility helpers for sessions, logging, and configuration encoding/decoding."""
+
 import asyncio
 import hashlib
 import os
@@ -7,13 +9,16 @@ import json
 
 
 class Utils:
+    """Collection of helper methods used across the project (sessions, logging, config encoding, notifications)."""
     @staticmethod
     def hash_session_name(admin_id, prefix):
+        """Generate a deterministic session name for Telethon based on admin_id and prefix."""
         return "_".join([prefix,
                          hashlib.md5(str(admin_id).encode()).hexdigest()])
 
     @staticmethod
     def clear_session(admin_id, prefix, session):
+        """Remove session files on disk and clear Flask session state."""
         # Delete previous session file if it exists
         session_file = f"{Utils.hash_session_name(admin_id, prefix)}.session"
         if os.path.exists(session_file):
@@ -29,6 +34,7 @@ class Utils:
 
     @staticmethod
     def clear_all_sessions():
+        """Remove any Telethon session files from the current working directory."""
         # Get the current directory
         current_dir = os.getcwd()
 
@@ -93,6 +99,7 @@ class Utils:
 
     @staticmethod
     def create_logger():
+        """Create and return the application logger."""
         logging.basicConfig(
             level=logging.ERROR,
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -105,6 +112,7 @@ class Utils:
 
     @staticmethod
     def encode_config(config_dict):
+        """Encode config to base64 and persist it to config/config.b64."""
         json_str = json.dumps(config_dict)
         encoded = base64.b64encode(json_str.encode()).decode()
         with open('config/config.b64', 'w') as f:
@@ -113,6 +121,7 @@ class Utils:
 
     @staticmethod
     def decode_config():
+        """Read and decode config/config.b64 into a Python dictionary."""
         # Read encoded config
         with open('config/config.b64', 'r') as f:
             encoded = f.read()

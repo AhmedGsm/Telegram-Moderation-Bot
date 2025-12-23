@@ -1,3 +1,11 @@
+"""Telegram moderation manager.
+
+This module implements the moderation workflow:
+- intercept posts from the source group
+- forward them to the backup/moderation group
+- present inline admin actions
+- apply the selected action (approve/reject/warn/mute/kick/ban/trust)"""
+
 import asyncio
 import json
 import time
@@ -10,7 +18,15 @@ from utils import Utils
 
 
 class TelegramPostManager:
+    """Central coordinator for the Telegram moderation workflow.
+
+Responsibilities:
+- Listen to source/backup groups
+- Track per-user context (including albums)
+- Show moderation menu with inline buttons
+- Handle admin actions triggered via callback queries"""
     def __init__(self, api_id, api_hash, bot_token, source_group, backup_group, admin_id):
+        """Initialize Telegram clients, in-memory user cache, and database access."""
         self.client = TelegramClient(Utils.hash_session_name(admin_id, "bot"),
                                      api_id, api_hash)
         self.user_client = None
@@ -32,6 +48,8 @@ class TelegramPostManager:
         self.db = UserDB()
 
     async def fetch_users_from_group(self, group_id, limit):
+
+        """Preload recent messages to reconstruct forwarded albums in the backup group."""
         # Start the client to fetch group messages
         # Generate a unique session name by hashing the admin_id
 
@@ -58,9 +76,11 @@ class TelegramPostManager:
                         forwarder_id,
                         ContentModerator(self.client, self.source_group, self.backup_group, self.admin_id)
                     )
-                    #user.albums[grouped_id].append(msg.id)
+                    user.albums[grouped_id].append(msg.id)
 
     async def get_sender(self, event, client):
+
+        """Return the ContentModerator instance associated with the event sender."""
         user = self.users.setdefault(
             event.sender_id,
             ContentModerator(client, self.source_group, self.backup_group, self.admin_id)
@@ -69,6 +89,7 @@ class TelegramPostManager:
 
     @staticmethod
     async def filter_single_message_detection(user, group: str):
+        """Detect whether consecutive posts represent an album or a single message."""
         if group == "source":
             is_album_attr = "is_album_on_source"
             start_attr = "start_time_on_source"
@@ -104,22 +125,27 @@ class TelegramPostManager:
 
     async def handle_new_message_on_source_group(self, event):
 
+
+        """Handle a new message posted in the source group."""
         user = await self.get_sender(event, self.client)
 
         if await TelegramPostManager.filter_single_message_detection(user, "source") == -1:
             return
 
-        await user.process_message(event)
-
         # add user to db
         telegram_user = await event.get_sender()
         self.db.ensure_user(telegram_user)
+
+        await user.process_message(event)
+
 
         user.is_album_on_source = False
         user.start_time_on_source = -1
 
     async def handle_new_message_on_backup_group(self, event):
 
+
+        """Handle a forwarded message arriving in the backup/moderation group."""
         await asyncio.sleep(0.2)
 
         if event.message.from_id.user_id != self.bot_id:
@@ -145,6 +171,8 @@ class TelegramPostManager:
         await TelegramPostManager.reset_attributes(user)
 
     async def handle_new_album_on_source_group(self, event):
+
+        """Handle a new album posted in the source group."""
         user = await self.get_sender(event, self.client)
         user.is_album_on_source = True
         await user.process_message(event)
@@ -157,12 +185,15 @@ class TelegramPostManager:
 
     @staticmethod
     async def reset_attributes(user):
+        """Reset album-detection attributes for a user."""
         user.is_album_on_source = False
         user.start_time_on_source = -1
         user.is_album_on_backup = False
         user.start_time_on_backup = -1
 
     async def handle_new_album_on_backup_group(self, event):
+
+        """Handle a forwarded album arriving in the backup/moderation group."""
         await asyncio.sleep(0.2)
         if not event.messages[0].forward:
             return  # Skip processing forwarded messages
@@ -177,6 +208,8 @@ class TelegramPostManager:
         self.is_notification_shown = False
 
     async def show_notification_menu(self, event):
+
+        """Send the moderation footer plus inline admin action buttons to the backup group."""
         # Get User ID
         user_poster_id = event.forward.from_id.user_id
         user_db = self.db.get_user(user_poster_id)
@@ -213,15 +246,15 @@ class TelegramPostManager:
                 Button.inline("🚫 Reject post", f"reject:{user_poster_id}:{message_id}:{message_type}".encode())
             ],
             [
-                Button.inline("⚠ Warn user", f"warn:{user_poster_id}:{message_id}:no_message_type".encode()),
-                Button.inline("🔇 Mute user", f"mute:{user_poster_id}:{message_id}:no_message_type".encode())
+                Button.inline("⚠ Warn user", f"warn:{user_poster_id}:{message_id}:message".encode()),
+                Button.inline("🔇 Mute user", f"mute:{user_poster_id}:{message_id}:message".encode())
             ],
             [
-                Button.inline("👢 Kick user", f"kick:{user_poster_id}:{message_id}:no_message_type".encode()),
-                Button.inline("🚫 Ban user", f"ban:{user_poster_id}:{message_id}:no_message_type".encode())
+                Button.inline("👢 Kick user", f"kick:{user_poster_id}:{message_id}:message".encode()),
+                Button.inline("🚫 Ban user", f"ban:{user_poster_id}:{message_id}:message".encode())
             ],
             [
-                Button.inline("🎖 Trust User", f"trust_user:{message_id}:{message_type}:no_message_type".encode())
+                Button.inline("🎖 Trust User", f"trust_user:{user_poster_id}:{message_id}:message".encode())
             ],
         ]
 
@@ -235,6 +268,7 @@ class TelegramPostManager:
 
     @events.register(events.CallbackQuery)
     async def callback_handler(self, event):
+        """Process admin inline-button actions (approve/reject/warn/mute/kick/ban/trust_user)."""
         data = event.data.decode("utf-8")
         action, user_id, message_id, message_type = data.split(":")
         user_id = int(user_id)
@@ -287,9 +321,13 @@ class TelegramPostManager:
             self.db.update_entry(user_id, "trust", "trusted")
             await TelegramPostManager.show_action_notification(event, "👍 <b>Trust updated .</b>\n",
                                                                USER_TRUSTED_MESSAGE)
+            await self.user_client.send_message(user_id,
+                                                f"<i>{event.chat.title}</i> group:" + TRUSTED_USER_MESSAGE,
+                                                parse_mode="html"
+                                                )
         elif action == "warn":
             await self.user_client.send_message(user_id,
-                                                f"<i>{self.source_group}</i> group:" + WARNING_MESSAGE,
+                                                f"<i>{event.chat.title}</i> group:" + WARNING_MESSAGE,
                                                 parse_mode="html"
                                                 )
 
@@ -310,7 +348,7 @@ class TelegramPostManager:
 
                 # Send DM message
                 # Send kick DM message
-                await self.user_client.send_message(user_id, f"<i>{self.source_group}</i> group:" + KICK_MESSAGE,
+                await self.user_client.send_message(user_id, f"<i>{event.chat.title}</i> group:" + KICK_MESSAGE,
                                                     parse_mode="html")
 
             except Exception as e:
@@ -330,6 +368,9 @@ class TelegramPostManager:
             )
             await TelegramPostManager.show_action_notification(event, "⚠ <b>User Muted .</b>\n",
                                                                USER_MUTED)
+            # Send Mute DM message
+            await self.user_client.send_message(user_id, f"<i>{event.chat.title}</i> group:" + MUTE_MESSAGE,
+                                                parse_mode="html")
 
             self.db.increment(user_id, "mute_count")
             self.db.set_state(user_id, "muted")
@@ -343,7 +384,7 @@ class TelegramPostManager:
             await TelegramPostManager.show_action_notification(event, "❌ <b>User banned.</b>\n",
                                                                USER_BANNED)
             # Send kick DM message
-            await self.user_client.send_message(user_id, f"<i>{self.source_group}</i> group:" + BAN_MESSAGE,
+            await self.user_client.send_message(user_id, f"<i>{event.chat.title}</i> group:" + BAN_MESSAGE,
                                                 parse_mode="html")
 
             self.db.increment(user_id, "ban_count")
@@ -370,6 +411,7 @@ class TelegramPostManager:
 
     @staticmethod
     async def show_action_notification(event, title, text):
+        """Replace the moderation message content with a short action result."""
         await event.edit(
             f"{title}\n{text}",
             buttons=None,
@@ -377,6 +419,8 @@ class TelegramPostManager:
         )
 
     async def start(self):
+
+        """Start Telegram clients and register event handlers."""
         try:
             await self.client.start(bot_token=self.bot_token)
             print("Bot is starting...")
@@ -399,6 +443,6 @@ class TelegramPostManager:
                                            events.Album(chats=self.backup_group))
         self.client.add_event_handler(self.callback_handler)
 
-        # Run non continuously
+        # Run until disconnected (keeps the bot active)
         await self.user_client.run_until_disconnected()
         await self.client.run_until_disconnected()

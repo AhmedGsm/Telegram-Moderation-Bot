@@ -1,3 +1,11 @@
+/**
+setup.js
+
+Client-side logic for the bot setup workflow.
+Manages form validation, Telegram login (code / 2FA),
+group discovery, and UI state transitions.
+*/
+
 (function() {
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -79,7 +87,7 @@ function getFormData() {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(text);
       } else {
-        // fallback
+        // Fallback
         const ta = document.createElement('textarea');
         ta.value = text;
         ta.style.position = 'fixed';

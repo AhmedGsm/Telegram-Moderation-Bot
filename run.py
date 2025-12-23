@@ -1,13 +1,31 @@
+"""Bot runner entry point.
+
+Reads configuration and starts the TelegramPostManager."""
+
 import asyncio
-
+import os
+import signal
+import sys
 from flask import session
-
-from constants import CONFIG_FILE_NOT_FOUND, CREATE_MANAGER_ERROR
+from constants import CONFIG_FILE_NOT_FOUND, CREATE_MANAGER_ERROR, PID_FILE
 from manager import TelegramPostManager
 from utils import Utils
 
 
+def cleanup(*args):
+    if os.path.exists(PID_FILE):
+        os.remove(PID_FILE)
+    sys.exit(0)
+
+# Register cleanup for normal stop signals
+signal.signal(signal.SIGTERM, cleanup)
+signal.signal(signal.SIGINT, cleanup)
+
+
 def create_manager():
+
+
+    """Read config file and create a TelegramPostManager instance."""
     # Read config file
     try:
         config = Utils.decode_config()

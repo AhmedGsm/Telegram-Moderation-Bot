@@ -1,3 +1,10 @@
+/**
+bot.js
+
+Client-side helper for triggering bot execution from the UI.
+Provides a safe POST wrapper and minimal user feedback handling.
+*/
+
 
     async function safeFetch(url, payload) {
       const res = await fetch(url, {

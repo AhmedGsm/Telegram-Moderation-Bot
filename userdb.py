@@ -1,13 +1,19 @@
+"""SQLite storage for moderation statistics and user state."""
+
 import sqlite3
 from datetime import datetime
 
 
 class UserDB:
+    """Simple SQLite wrapper storing user identity, trust level, moderation counters, and current state."""
     def __init__(self, path="database.db"):
+        """Open a SQLite connection and ensure required tables exist."""
         self.conn = sqlite3.connect(path, check_same_thread=False)
         self.create_table()
 
     def create_table(self):
+
+        """Create the users table if it does not exist."""
         query = """
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY,
@@ -33,6 +39,8 @@ class UserDB:
         self.conn.commit()
 
     def ensure_user(self, user):
+
+        """Insert a user row if not already present."""
         query = """
         INSERT OR IGNORE INTO users (id, username, first_name, last_name, phone,
                                      language_code, is_bot, join_date, last_seen)
@@ -55,6 +63,8 @@ class UserDB:
         self.conn.commit()
 
     def increment(self, user_id, field):
+
+        """Increment a numeric counter field and update last_seen."""
         query = f"""
             UPDATE users
             SET {field} = {field} + 1,
@@ -65,6 +75,8 @@ class UserDB:
         self.conn.commit()
 
     def set_state(self, user_id, state):
+
+        """Set the user's current moderation state and update last_seen."""
         query = """
             UPDATE users
             SET actual_state = ?, last_seen = ?
@@ -75,6 +87,7 @@ class UserDB:
 
     @staticmethod
     def check_db_columns(column):
+        """Validate column name against an allow-list to prevent SQL injection."""
         allowed_columns = {
             "*", "id", "username", "first_name", "last_name", "phone",
             "language_code", "is_bot", "last_seen", "trust",
@@ -86,6 +99,8 @@ class UserDB:
             raise ValueError(f"Invalid column name: {column}")
 
     def update_entry(self, user_id, column, value):
+
+        """Update a single allowed column and update last_seen."""
         # Protect from SQL injection
         UserDB.check_db_columns(column)
 
@@ -99,6 +114,8 @@ class UserDB:
         self.conn.commit()
 
     def get_user(self, user_id, column="*"):
+
+        """Fetch a user row as a dictionary for the requested columns."""
         # Protect from SQL injection
         UserDB.check_db_columns(column)
 

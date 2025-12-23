@@ -1,3 +1,8 @@
+"""Global constants and user-facing messages used across the bot.
+
+This module centralizes notification texts, delays, timeouts, and error messages
+to avoid hard-coded values across the codebase."""
+
 NOTIFICATION_HIDE_FOR_MODERATION = "The post will be reviewed, please wait. Thank you."
 NOTIFICATION_NO_MORE_TEN_IMAGES = " Uploading more than 10 images is not allowed"
 NOTIFICATION_NO_DIRECT_POSTING_IN_BACKUP_GROUP = " Posting in this group is not allowed!"
@@ -17,6 +22,15 @@ WARNING_MESSAGE = (
                     "Please make sure your next messages follow the rules. "
                     "Repeated violations may lead to a mute, kick, or ban."
                 )
+
+MUTE_MESSAGE = (
+    f"🔇 <b>You have been muted by the admins</b>\n\n"
+    "Your recent message violated the group rules "
+    "(for example: spam, advertising, offensive language, or inappropriate media).\n\n"
+    "As a result, you have been temporarily muted and cannot send messages for a limited time.\n\n"
+    "Please review the group rules and make sure your future messages comply. "
+    "Further violations may result in a kick or permanent ban."
+)
 
 KICK_MESSAGE = (
     f" <b>You have been temporarily removed from the group:</b> \n\n"
@@ -47,14 +61,23 @@ BAN_MESSAGE = (
     "— but please remain respectful.\n\n"
     "Thank you for your understanding."
 )
+
+TRUSTED_USER_MESSAGE = (
+    "✅ <b>You are now a trusted user</b>\n\n"
+    "Your message has been published directly without moderation.\n\n"
+    "You are allowed to share messages and post content without prior verification or approval by the admins.\n\n"
+    "Please continue to respect the group rules. "
+    "Any future violations may result in the removal of your trusted status."
+)
+
 # Manager.py
 NOTIFICATION_POST_APPROVED_SUCCESSFULLY = "Post has been approved successfully."
 ITEM_REJECTED = "The item will not be published."
 POST_REJECTED_MESSAGE = "Your post is rejected by the admins. Please follow group rules."
-USER_TRUSTED_MESSAGE = "User trusted now and he can post without verification!"
+USER_TRUSTED_MESSAGE = "User is now trusted and can post without verification."
 DM_WARNING = "DM Warning has been sent to user."
 USER_KICKED = "User has been kicked."
-USER_MUTED = "User has been muted ."
+USER_MUTED = "User has been muted."
 USER_BANNED = "User has been banned."
 
 # Setup.py
@@ -68,16 +91,19 @@ VERIFICATION_CODE_EXPIRED = "Verification code has expired. Please request a new
 TWO_FACTOR_ENABLED = "Two-factor authentication is enabled. Please provide your password."
 UNEXPECTED_ERROR_OCCURRED = "An unexpected error occurred:"
 INCORRECT_PASSWORD = "Incorrect password. Please try again."
-MODERATION_IS_RUNNING = "Bot is running and start moderation..."
-CONFIG_FILE_NOT_FOUND = "Please Reinstall your bot"
-CREATE_MANAGER_ERROR = "Error creating manager"
+MODERATION_IS_RUNNING = "Bot is running and moderation has started..."
+CONFIG_FILE_NOT_FOUND = "Please reinstall your bot."
+CREATE_MANAGER_ERROR = "Error creating manager."
 
 
 # Error messages
 ERROR_START_CLIENT = "manager.py on line 377: Error starting the client:"
 ERROR_PROCESSING_MESSAGE = "moderator.py on line 78: Error processing message:"
-FAILED_KICK_USER = "Failed to kick user ."
+FAILED_KICK_USER = "Failed to kick user."
 NOT_MESSAGE_ALBUM = "The message type is not a message neither an album"
 DELETE_NOTIFICATION_ERROR_01 = "utils.py on line 47: Couldn't delete notification:"
 DELETE_NOTIFICATION_ERROR_02 = "utils.py on line 50: Couldn't delete notification:"
 DELETE_SESSION_ERROR = "Utils.py on line 44: Error deleting session files"
+
+# Files
+PID_FILE = "bot.pid"

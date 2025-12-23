@@ -1,4 +1,13 @@
+"""Web setup server for the Telegram moderation bot.
+
+Provides a simple UI to:
+- create the Telethon user session
+- discover eligible groups/channels
+- store configuration
+- launch the bot process"""
+
 # setup.py
+import psutil
 from flask import Flask, render_template, request, jsonify, session
 import os
 from telethon.sync import TelegramClient
@@ -13,8 +22,12 @@ from constants import *
 
 
 class Setup:
+    """Setup helper functions used by the Flask setup server.
+
+Includes secret key creation and Telegram group discovery for the logged-in user."""
     @staticmethod
     def get_or_create_secret_key():
+        """Create or load a stable Flask secret key stored under config/."""
         config_dir = 'config'
         key_file = os.path.join(config_dir, 'secret.key')
     
@@ -34,6 +47,7 @@ class Setup:
 
     @staticmethod
     def fetch_groups(client):
+        """Fetch groups/channels where the current user is the creator."""
         groups = []
         dialogs = client.get_dialogs()
 
@@ -53,6 +67,27 @@ class Setup:
 
         return groups
 
+    @staticmethod
+    def is_process_running(pid):
+        return psutil.pid_exists(pid)
+
+    @staticmethod
+    def bot_is_running():
+        if not os.path.exists(PID_FILE):
+            return False
+
+        with open(PID_FILE, "r") as f:
+            pid = int(f.read().strip())
+
+        # Check if process exists
+
+        if Setup.is_process_running(pid):
+            return True  # bot already running
+        else:
+            os.remove(PID_FILE)  # stale PID
+            return False
+
+
 
 app = Flask(__name__)
 app.secret_key = Setup.get_or_create_secret_key()
@@ -60,21 +95,25 @@ app.secret_key = Setup.get_or_create_secret_key()
 
 @app.route('/')
 def index():
+    """Redirect to the features page."""
     return redirect(url_for('features'))
 
 
 @app.route('/features')
 def features():
+    """Render the features landing page."""
     return render_template('features.html')
 
 
 @app.route('/setup')
 def setup():
+    """Render the setup page."""
     return render_template('setup.html')
 
 
 @app.route('/save_config', methods=['POST'])
 def save_config():
+    """Persist configuration values to an encoded config file."""
     try:
         data = request.json
         config = {
@@ -95,6 +134,7 @@ def save_config():
 
 @app.route('/setup_session', methods=['POST'])
 def setup_session():
+    """Initialize Telegram login and request a verification code when required."""
     client = None
     try:
         data = request.json
@@ -161,6 +201,7 @@ def setup_session():
 
 @app.route('/verify_code', methods=['POST'])
 def verify_code():
+    """Verify the Telegram login code and return the user's creator-owned groups."""
     client = None
     try:
         data = request.json
@@ -204,6 +245,7 @@ def verify_code():
 
 @app.route('/validate_2fa', methods=['POST'])
 def validate_2fa():
+    """Validate Telegram 2FA password and return the user's creator-owned groups."""
     client = None
     try:
         data = request.json
@@ -240,16 +282,33 @@ def validate_2fa():
 
 @app.route('/run_bot', methods=['POST'])
 def run_bot():
+    if Setup.bot_is_running():
+        return jsonify({
+            'status': 'error',
+            'message': 'Bot is already running'
+        }), 409
+
     try:
-        # Launch moderator.py as a subprocess
-        subprocess.Popen(["python", "run.py"])
-        return jsonify({'status': 'success', 'message': MODERATION_IS_RUNNING})
+        process = subprocess.Popen(["python", "run.py"])
+
+        # Save PID
+        with open(PID_FILE, "w") as f:
+            f.write(str(process.pid))
+
+        return jsonify({
+            'status': 'success',
+            'message': MODERATION_IS_RUNNING
+        })
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)})
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 
 @app.route('/run')
 def run_page():
+    """Render the run page if setup is complete."""
     # If config doesn't exist, redirect to setup page
     if not os.path.exists("config/config.b64"):
         return redirect(url_for('no_setup'))
@@ -258,6 +317,7 @@ def run_page():
 
 @app.route('/no-setup')
 def no_setup():
+    """Render a page explaining that setup has not been completed yet."""
     return render_template('no-setup.html')
 
 # This block is used only when running the application directly

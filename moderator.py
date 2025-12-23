@@ -1,3 +1,8 @@
+"""Per-user moderation logic.
+
+This module contains the ContentModerator, responsible for forwarding content
+to the moderation group and applying posting restrictions based on trust/admin status."""
+
 import asyncio
 from collections import defaultdict
 from constants import *
@@ -5,7 +10,15 @@ from userdb import UserDB
 from utils import Utils
 
 class ContentModerator:
+    """Moderation logic for a single sender.
+
+The moderator:
+- ignores service messages
+- bypasses admins and trusted users
+- forwards posts/albums to the backup group for review
+- deletes the original post and notifies the sender"""
     def __init__(self, client, source_group, backup_group, admin_id):
+        """Initialize moderation context for a sender."""
         self.pending_albums = {}
         self.user_id = -1000
         self.source_group = source_group
@@ -30,6 +43,8 @@ class ContentModerator:
         self.db = UserDB()
 
     async def process_message(self, event):
+
+        """Process a single message or album and forward it for moderation when required."""
         # Check if the event is a single message or part of an album
         event_message = None
         try:
@@ -79,6 +94,9 @@ class ContentModerator:
 
 
     async def delete_post_and_notify(self, event):
+
+
+        """Delete the original post and send a temporary moderation notification."""
         # Delete all album parts
         await event.delete()
         # Send notification

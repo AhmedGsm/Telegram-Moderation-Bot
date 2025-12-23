@@ -1,3 +1,10 @@
+/**
+script.js
+
+Handles responsive UI behavior for the documentation interface.
+Listens to viewport changes and resets sidebar state when required.
+*/
+
 document.addEventListener('DOMContentLoaded', function() {
 
     // Responsive behavior
