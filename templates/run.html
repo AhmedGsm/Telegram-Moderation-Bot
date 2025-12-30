@@ -12,7 +12,6 @@
       <div class="instructions">
         <p>This page allows you to run your Telegram Moderation Bot.</p>
         <p>Make sure you’ve completed the setup process and saved your configuration.</p>
-        <p>If no configuration is found, you’ll be redirected to the setup page.</p>
       </div>
 
       <form id="runBotForm">
@@ -30,6 +29,8 @@
   {% block scripts %}
     {{ super() }}
     <script >
+      // Access button DOM
+      let runButton = document.getElementById('runBotBtn');
       async function safeFetch(url, payload) {
         const res = await fetch(url, {
           method: 'POST',
@@ -46,11 +47,30 @@
         box.style.display = 'block';
       }
 
-      document.getElementById('runBotBtn').addEventListener('click', async () => {
+      async function init() {
+        // Check if the bot (run.py) is running
+        const data = await safeFetch('/check_bot_running', {});
+        if (data.runStatus === 'true') {
+          // Run the bot and disable the button..
+          runButton.textContent = "Bot is running...";
+          runButton.disabled = true;
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        init().catch(err => console.error('Init error:', err));
+      });
+
+      runButton.addEventListener('click', async () => {
+
+        runButton.textContent = "Running bot...";
         try {
           const data = await safeFetch('/run_bot', {});
           if (data.status === 'success') {
             showMessage(data.message, 'success');
+          // Run the bot and disable the button..
+            runButton.textContent = "Bot is running...";
+            runButton.disabled = true;
           } else {
             showMessage(data.message || 'Failed to start bot.', 'error');
           }

@@ -234,6 +234,8 @@ function getFormData() {
   // Run bot
   if (runBotBtn) {
     runBotBtn.addEventListener('click', async function () {
+      // Disable run button
+      this.disabled = true;
       try {
         const data = await safeFetch('/run_bot', {});
         if (data.status === 'success') {

@@ -94,6 +94,7 @@ INCORRECT_PASSWORD = "Incorrect password. Please try again."
 MODERATION_IS_RUNNING = "Bot is running and moderation has started..."
 CONFIG_FILE_NOT_FOUND = "Please reinstall your bot."
 CREATE_MANAGER_ERROR = "Error creating manager."
+BOT_ALREADY_INSTALLED = "The bot is already installed. To reinstall, delete the file 'config/config.b64' and relaunch the setup."
 
 
 # Error messages
@@ -104,6 +105,9 @@ NOT_MESSAGE_ALBUM = "The message type is not a message neither an album"
 DELETE_NOTIFICATION_ERROR_01 = "utils.py on line 47: Couldn't delete notification:"
 DELETE_NOTIFICATION_ERROR_02 = "utils.py on line 50: Couldn't delete notification:"
 DELETE_SESSION_ERROR = "Utils.py on line 44: Error deleting session files"
+BOT_RUNNING = "Bot is already running"
+BOT_STOPPED = "Bot is stopped"
 
 # Files
+CONFIG_FILE = "config/config.b64"
 PID_FILE = "bot.pid"

@@ -108,8 +108,18 @@ def features():
 @app.route('/setup')
 def setup():
     """Render the setup page."""
+
+    if os.path.exists(CONFIG_FILE):
+        return redirect(url_for('setup_done'))
     return render_template('setup.html')
 
+
+@app.route('/setup_done')
+def setup_done():
+    """Render the setup done page."""
+    if not os.path.exists(CONFIG_FILE):
+        return redirect(url_for('setup'))
+    return render_template('setup-done.html')
 
 @app.route('/save_config', methods=['POST'])
 def save_config():
@@ -280,6 +290,21 @@ def validate_2fa():
             client.disconnect()
 
 
+@app.route('/check_bot_running', methods=['POST'])
+def check_running():
+    running_status = 'false'
+    message = BOT_STOPPED
+    if Setup.bot_is_running():
+        running_status = 'true'
+        message = BOT_RUNNING
+
+    return jsonify({
+
+        'runStatus': running_status,
+        'status': 'info',
+        'message': message
+    })
+
 @app.route('/run_bot', methods=['POST'])
 def run_bot():
     if Setup.bot_is_running():
@@ -310,7 +335,7 @@ def run_bot():
 def run_page():
     """Render the run page if setup is complete."""
     # If config doesn't exist, redirect to setup page
-    if not os.path.exists("config/config.b64"):
+    if not os.path.exists(CONFIG_FILE):
         return redirect(url_for('no_setup'))
     return render_template('run.html')
 
