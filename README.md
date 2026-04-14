@@ -244,13 +244,13 @@ We welcome improvements! Please follow these steps:
 ---
 
 ## 📄 License
-Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
+Distributed under the **GPLv3 License**. See [`LICENSE`](LICENSE) for details.
 
 ---
 
 > 📬 **Support & Feedback**  
 > Found a bug? Have a feature request?  
-> → [Open an Issue](https://github.com/yourusername/telegram-moderation-bot/issues)  
+> → [Open an Issue](https://github.com/ahmedgsm/telegram-moderation-bot/issues)  
 > → Or reach out via Telegram for priority support.
 
 *Built for community safety. Designed for simplicity. Powered by open source.* 🌟
